@@ -8,6 +8,9 @@ import (
 
 func Supported(s Site) error {
 	var errs []error
+	if s.Name == "shared" {
+		errs = append(errs, fmt.Errorf("site name %q is reserved", s.Name))
+	}
 	if s.Type != "magento2" {
 		errs = append(errs, fmt.Errorf("project type %q is not supported, only magento2", s.Type))
 	}

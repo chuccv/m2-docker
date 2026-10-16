@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/chuccv/m2-docker/internal/run"
@@ -81,7 +82,7 @@ func guard(next http.Handler) http.Handler {
 			}
 			if o := req.Header.Get("Origin"); o != "" {
 				u, err := url.Parse(o)
-				if err != nil || !isLoopbackHost(u.Host) {
+				if err != nil || !isLoopbackHost(u.Host) || !strings.EqualFold(u.Host, req.Host) {
 					http.Error(w, "forbidden origin", http.StatusForbidden)
 					return
 				}

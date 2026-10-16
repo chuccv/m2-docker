@@ -301,3 +301,17 @@ func TestDdevSiteLinksUseDdevPorts(t *testing.T) {
 		}
 	}
 }
+
+func TestOriginHostMustMatchRequestHost(t *testing.T) {
+	fa := &fakeActions{}
+	h := NewServer(t.TempDir(), &run.FakeRunner{}, fa)
+	if r := do(h, "POST", "/api/sites/a/up", "", map[string]string{"X-MD": "1", "Origin": "http://127.0.0.1:9901"}); r.Code != 403 {
+		t.Fatalf("other loopback port: %d", r.Code)
+	}
+	if r := do(h, "POST", "/api/sites/a/up", "", map[string]string{"X-MD": "1", "Origin": "http://localhost:9900"}); r.Code != 403 {
+		t.Fatalf("other loopback name: %d", r.Code)
+	}
+	if len(fa.calls) != 0 {
+		t.Fatalf("actions called: %v", fa.calls)
+	}
+}

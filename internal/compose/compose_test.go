@@ -30,7 +30,7 @@ func golden(t *testing.T, name string, got []byte) {
 	}
 }
 
-var paths = Paths{Home: "/home/neil/.md", Root: "/home/neil/m2-docker"}
+var paths = Paths{Home: "/home/user/.md", Root: "/home/user/m2-docker"}
 
 func loadSite(t *testing.T, name string) site.Site {
 	t.Helper()
@@ -151,7 +151,7 @@ func TestRenderSiteMountsNginxRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(out), "/home/neil/.md/sites/ee249-qa/nginx-run.conf:/etc/nginx/md-run.conf:ro") {
+	if !strings.Contains(string(out), "/home/user/.md/sites/ee249-qa/nginx-run.conf:/etc/nginx/md-run.conf:ro") {
 		t.Fatalf("got %s", out)
 	}
 }

@@ -160,3 +160,10 @@ func TestLoadNameDefaultsToDirBase(t *testing.T) {
 		}
 	}
 }
+
+func TestSupportedRejectsSharedName(t *testing.T) {
+	err := Supported(Site{Name: "shared", Type: "magento2", Webserver: "nginx-fpm", DBType: "mariadb", DBVersion: "11.4"})
+	if err == nil || !strings.Contains(err.Error(), "shared") {
+		t.Fatalf("got %v", err)
+	}
+}

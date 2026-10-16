@@ -56,8 +56,8 @@ services:
       - 127.0.0.1:9143:9143
       - 127.0.0.1:9142:9142
     volumes:
-      - /home/neil/.md/router/dynamic:/etc/traefik/dynamic
-      - /home/neil/.md/certs:/certs:ro
+      - /home/user/.md/router/dynamic:/etc/traefik/dynamic
+      - /home/user/.md/certs:/certs:ro
     networks:
       - md
   md-xhgui:
@@ -70,7 +70,7 @@ services:
       - chown www-data /data && nginx -g 'pid /dev/shm/nginx.pid;' && exec php-fpm
     volumes:
       - md-xhgui-data:/data
-      - /home/neil/.md/shared/xhgui-config.php:/var/www/xhgui/config/config.php:ro
+      - /home/user/.md/shared/xhgui-config.php:/var/www/xhgui/config/config.php:ro
     extra_hosts:
       - xhgui:127.0.0.1
     networks:
