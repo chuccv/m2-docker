@@ -63,3 +63,30 @@ func hasConfig(dir string) bool {
 	_, err := os.Stat(filepath.Join(dir, ".ddev", "config.yaml"))
 	return err == nil || HasMDConfig(dir)
 }
+
+func ScanAll(root string) []Site {
+	var out []Site
+	scanAll(root, 0, &out)
+	return out
+}
+
+func scanAll(dir string, depth int, out *[]Site) {
+	if hasConfig(dir) {
+		if s, err := Load(dir); err == nil {
+			*out = append(*out, s)
+			return
+		}
+	}
+	if depth >= maxScanDepth {
+		return
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
+			scanAll(filepath.Join(dir, e.Name()), depth+1, out)
+		}
+	}
+}

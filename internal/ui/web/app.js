@@ -1,0 +1,180 @@
+(function () {
+  var busy = {};
+  var stats = { sites: [], shared: { mem: 0, cpu: 0 } };
+  var sites = [];
+
+  function $(id) { return document.getElementById(id); }
+
+  function fmtMem(b) {
+    if (!b) return "-";
+    if (b >= 1 << 30) return (b / (1 << 30)).toFixed(1) + " GiB";
+    if (b >= 1 << 20) return Math.round(b / (1 << 20)) + " MiB";
+    return Math.round(b / 1024) + " KiB";
+  }
+
+  function showMsg(text) {
+    var m = $("msg");
+    m.textContent = text || "";
+    m.hidden = !text;
+  }
+
+  function api(method, path, body) {
+    var opts = { method: method, headers: {} };
+    if (method === "POST") {
+      opts.headers["X-MD"] = "1";
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body || {});
+    }
+    return fetch(path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) throw new Error(j.error || r.statusText);
+        return j;
+      });
+    });
+  }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function link(label, href) {
+    var a = el("a", "", label);
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener";
+    return a;
+  }
+
+  function statOf(name) {
+    for (var i = 0; i < stats.sites.length; i++) if (stats.sites[i].name === name) return stats.sites[i];
+    return null;
+  }
+
+  function act(name, action) {
+    busy[name] = action;
+    render();
+    api("POST", "/api/sites/" + encodeURIComponent(name) + "/" + action)
+      .catch(function (e) { showMsg(name + " " + action + ": " + e.message); })
+      .then(function () { delete busy[name]; refreshSites(); });
+  }
+
+  function actionBtn(label, name, action, disabled) {
+    var b = el("button", "", label);
+    b.disabled = disabled;
+    b.onclick = function () { act(name, action); };
+    return b;
+  }
+
+  function render() {
+    var tb = document.querySelector("#sites tbody");
+    tb.textContent = "";
+    var totMem = 0, totCpu = 0;
+    sites.forEach(function (s) {
+      var tr = el("tr");
+      tr.appendChild(el("td", "", s.name));
+      var label = busy[s.name] ? busy[s.name] + "..." : s.status === "ddev" ? "running (ddev)" : s.status;
+      var cls = busy[s.name] ? "busy" : s.status;
+      tr.appendChild(el("td", "st " + cls, label));
+      var links = el("td");
+      if (s.status !== "stopped") {
+        ["storefront", "admin", "mailpit", "xhgui"].forEach(function (k) {
+          if (s.urls && s.urls[k]) links.appendChild(link(k, s.urls[k]));
+        });
+      }
+      tr.appendChild(links);
+      tr.appendChild(el("td", "", s.php || "-"));
+      tr.appendChild(el("td", "", s.db || "-"));
+      tr.appendChild(el("td", "", s.search || "-"));
+      var u = statOf(s.name);
+      if (u) { totMem += u.mem; totCpu += u.cpu; }
+      tr.appendChild(el("td", "num", u ? fmtMem(u.mem) : "-"));
+      tr.appendChild(el("td", "num", u ? u.cpu.toFixed(1) + "%" : "-"));
+      var ac = el("td", "actions");
+      var locked = !!s.blocked || !!busy[s.name];
+      ac.appendChild(actionBtn("Up", s.name, "up", locked || s.status === "running"));
+      ac.appendChild(actionBtn("Stop", s.name, "stop", locked || s.status !== "running"));
+      ac.appendChild(actionBtn("Restart", s.name, "restart", locked || s.status !== "running"));
+      if (s.blocked) ac.appendChild(el("span", "blocked", s.blocked));
+      tr.appendChild(ac);
+      tb.appendChild(tr);
+    });
+    totMem += stats.shared.mem || 0;
+    totCpu += stats.shared.cpu || 0;
+    $("total-mem").textContent = fmtMem(totMem);
+    $("total-cpu").textContent = totCpu.toFixed(1) + "%";
+    $("shared").textContent = fmtMem(stats.shared.mem) + " / " + (stats.shared.cpu || 0).toFixed(1) + "%";
+  }
+
+  function refreshSites() {
+    return api("GET", "/api/sites").then(function (s) { sites = s; render(); }).catch(function (e) { showMsg(e.message); });
+  }
+
+  function refreshStats() {
+    return api("GET", "/api/stats").then(function (s) { stats = s; render(); }).catch(function () {});
+  }
+
+  function fill(id, rows) {
+    var tb = document.querySelector("#" + id + " tbody");
+    tb.textContent = "";
+    rows.forEach(function (cells) {
+      var tr = el("tr");
+      cells.forEach(function (c, i) { tr.appendChild(el("td", c.num ? "num" : "", c.t)); });
+      tb.appendChild(tr);
+    });
+  }
+
+  function refreshDisk() {
+    api("GET", "/api/disk").then(function (d) {
+      fill("images", d.images.map(function (i) {
+        return [{ t: i.repo + ":" + i.tag }, { t: i.size, num: 1 }, { t: i.containers, num: 1 }];
+      }));
+      fill("volumes", d.volumes.map(function (v) {
+        return [{ t: v.name }, { t: v.site || "-" }, { t: v.size, num: 1 }];
+      }));
+    }).catch(function (e) { showMsg(e.message); });
+  }
+
+  function showTab(name) {
+    ["sites", "disk"].forEach(function (t) { $("tab-" + t).hidden = t !== name; });
+    document.querySelectorAll(".tab").forEach(function (b) { b.classList.toggle("active", b.dataset.tab === name); });
+    if (name === "disk") refreshDisk();
+  }
+
+  document.querySelectorAll(".tab").forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); }; });
+
+  $("poweroff").onclick = function () {
+    if (!window.confirm("Stop every running site and the shared stack?")) return;
+    api("POST", "/api/poweroff").catch(function (e) { showMsg("poweroff: " + e.message); }).then(refreshSites);
+  };
+
+  $("plan").onclick = function () {
+    api("GET", "/api/clean").then(function (p) {
+      var lines = p.items.map(function (i) { return i.Kind + "  " + i.Name + "  " + i.Size; });
+      if (p.orphans.length) {
+        lines.push("", "Orphan DB volumes (remove by hand):");
+        p.orphans.forEach(function (i) { lines.push("  docker volume rm " + i.Name); });
+      }
+      $("plan-out").textContent = lines.length ? lines.join("\n") : "";
+      if (!p.items.length) showMsg("Nothing to clean");
+    }).catch(function (e) { showMsg(e.message); });
+  };
+
+  $("clean").onclick = function () {
+    var c = $("confirm").value.trim();
+    if (c !== "yes") { showMsg("Type yes to confirm cleanup"); return; }
+    api("POST", "/api/clean", { confirm: c }).then(function () {
+      $("confirm").value = "";
+      $("plan-out").textContent = "";
+      showMsg("");
+      refreshDisk();
+    }).catch(function (e) { showMsg("clean: " + e.message); });
+  };
+
+  refreshSites();
+  refreshStats();
+  setInterval(refreshStats, 3000);
+  setInterval(refreshSites, 15000);
+})();

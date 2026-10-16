@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>md</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+<h1>md</h1>
+<nav>
+<button class="tab active" data-tab="sites">Sites</button>
+<button class="tab" data-tab="disk">Disk</button>
+</nav>
+<button id="poweroff" class="danger">Poweroff</button>
+</header>
+<div id="msg" hidden></div>
+<main>
+<section id="tab-sites">
+<div class="cards">
+<div class="card"><span>RAM</span><b id="total-mem">-</b></div>
+<div class="card"><span>CPU</span><b id="total-cpu">-</b></div>
+<div class="card"><span>Shared</span><b id="shared">-</b></div>
+</div>
+<div class="scroll">
+<table id="sites">
+<thead><tr><th>Site</th><th>Status</th><th>Links</th><th>PHP</th><th>DB</th><th>Search</th><th class="num">RAM</th><th class="num">CPU</th><th>Actions</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</section>
+<section id="tab-disk" hidden>
+<div class="clean">
+<button id="plan">Preview cleanup</button>
+<input id="confirm" placeholder="type yes" autocomplete="off" size="8">
+<button id="clean" class="danger">Clean</button>
+</div>
+<pre id="plan-out"></pre>
+<h2>Images</h2>
+<div class="scroll"><table id="images"><thead><tr><th>Image</th><th class="num">Size</th><th class="num">In use</th></tr></thead><tbody></tbody></table></div>
+<h2>Volumes</h2>
+<div class="scroll"><table id="volumes"><thead><tr><th>Volume</th><th>Site</th><th class="num">Size</th></tr></thead><tbody></tbody></table></div>
+</section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
