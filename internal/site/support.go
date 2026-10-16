@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+func (s Site) HasAddon(name string) bool { return contains(s.Addons, name) }
+
 func Supported(s Site) error {
 	var errs []error
 	if s.Name == "shared" {
@@ -20,7 +22,7 @@ func Supported(s Site) error {
 	if strings.HasPrefix(s.Webserver, "apache") {
 		errs = append(errs, fmt.Errorf("webserver %q (apache) is not supported, only nginx-fpm", s.Webserver))
 	}
-	for _, a := range []string{"elasticsearch", "varnish", "rabbitmq", "mutagen"} {
+	for _, a := range []string{"elasticsearch", "varnish", "rabbitmq"} {
 		if contains(s.Addons, a) {
 			errs = append(errs, fmt.Errorf("addon %s is not supported", a))
 		}

@@ -82,7 +82,7 @@ func TestSupported(t *testing.T) {
 	if err := Supported(load(t, "ee249-qa")); err != nil {
 		t.Fatal(err)
 	}
-	for _, a := range []string{"varnish", "rabbitmq", "mutagen"} {
+	for _, a := range []string{"varnish", "rabbitmq"} {
 		err := Supported(Site{Type: "magento2", Webserver: "nginx-fpm", Addons: []string{a}})
 		if err == nil || !strings.Contains(err.Error(), a) {
 			t.Fatalf("%s: %v", a, err)
@@ -133,6 +133,12 @@ func has(l []string, v string) bool {
 		}
 	}
 	return false
+}
+
+func TestSupportedAllowsMutagen(t *testing.T) {
+	if err := Supported(Site{Type: "magento2", Webserver: "nginx-fpm", DBType: "mariadb", Addons: []string{"mutagen"}}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestSupportedRejectsMySQL(t *testing.T) {

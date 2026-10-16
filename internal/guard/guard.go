@@ -17,6 +17,7 @@ var allowedCompose = map[string]bool{
 	"opensearch":        true,
 	"opensearch_memory": true,
 	"redis":             true,
+	"mutagen":           true,
 	"xhgui-extended":    true,
 	"xhgui-ext-route":   true,
 	"no-os-dashboards":  true,

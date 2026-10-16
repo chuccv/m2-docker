@@ -157,9 +157,9 @@ func TestMigrateRefusesWithoutDDEV(t *testing.T) {
 
 func TestMigrateUnsupportedWritesNothing(t *testing.T) {
 	fx := msetup(t)
-	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.varnish.yaml"), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.rabbitmq.yaml"), []byte("x"), 0o644)
 	cs, err := fx.migrate()
-	if err == nil || !strings.Contains(err.Error(), "varnish") || len(cs) != 0 || site.HasMDConfig(fx.root) || len(fx.upSites) != 0 {
+	if err == nil || !strings.Contains(err.Error(), "rabbitmq") || len(cs) != 0 || site.HasMDConfig(fx.root) || len(fx.upSites) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
 	}
 }
@@ -372,5 +372,20 @@ func TestMigrateNoEnvPhpNoBackupNoHint(t *testing.T) {
 	out, _ := io.ReadAll(rd)
 	if strings.Contains(string(out), "env.php") || exists(filepath.Join(fx.home, "sites", "mig", "env.php.pre-migrate")) {
 		t.Fatalf("%q", out)
+	}
+}
+
+func TestMigrateNotesMutagen(t *testing.T) {
+	fx := msetup(t)
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.mutagen.yaml"), []byte("x"), 0o644)
+	var buf strings.Builder
+	old := stderr
+	stderr = &buf
+	defer func() { stderr = old }()
+	if _, err := fx.migrate(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "mutagen bỏ qua trên Linux") {
+		t.Fatalf("stderr %q", buf.String())
 	}
 }
