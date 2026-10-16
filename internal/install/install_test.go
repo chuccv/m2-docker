@@ -316,3 +316,12 @@ func TestIsBlank(t *testing.T) {
 		t.Fatal("composer.json should not be blank")
 	}
 }
+
+func TestInstallRefusesExistingMDConfig(t *testing.T) {
+	fx := setup(t)
+	site.WriteMDConfig(fx.root, site.MDConfig{Name: "shop"})
+	cs, err := fx.run()
+	if err == nil || !strings.Contains(err.Error(), "md up") || len(cs) != 0 {
+		t.Fatalf("err %v calls %v", err, cs)
+	}
+}

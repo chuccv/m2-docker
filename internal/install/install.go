@@ -113,6 +113,9 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) error {
 	if err != nil {
 		return err
 	}
+	if site.HasMDConfig(root) {
+		return fmt.Errorf("%s already has .md/config.yaml: use `md up`", root)
+	}
 	if exists(filepath.Join(root, ".ddev")) {
 		return fmt.Errorf("%s has a .ddev folder: use `md migrate`", root)
 	}

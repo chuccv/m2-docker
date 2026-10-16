@@ -200,3 +200,43 @@ func TestMigrateNeverWritesDDEV(t *testing.T) {
 		t.Fatalf("ddev changed\n%v\n%v", before, after)
 	}
 }
+
+func TestMigrateRollsBackMDConfigOnFailure(t *testing.T) {
+	cases := map[string]func(*mfixture){
+		"up": func(fx *mfixture) { fx.upErr = os.ErrPermission },
+		"reindex": func(fx *mfixture) {
+			fx.f.Err[mWeb+"php bin/magento indexer:reindex catalogsearch_fulltext"] = os.ErrPermission
+		},
+		"lock": func(fx *mfixture) {
+			fx.f.Err[mWeb+"php bin/magento config:set --lock-env web/secure/base_url https://mig.ddev.site/"] = os.ErrPermission
+		},
+	}
+	for name, mod := range cases {
+		fx := msetup(t)
+		mod(fx)
+		if _, err := fx.migrate(); err == nil {
+			t.Fatalf("%s: expected error", name)
+		}
+		if site.HasMDConfig(fx.root) || exists(filepath.Join(fx.root, ".md")) {
+			t.Fatalf("%s: md config left behind", name)
+		}
+		if !exists(filepath.Join(fx.root, ".ddev", "config.yaml")) {
+			t.Fatalf("%s: .ddev touched", name)
+		}
+		fx.upErr = nil
+		fx.f.Err = map[string]error{}
+		if _, err := fx.migrate(); err != nil || !site.HasMDConfig(fx.root) {
+			t.Fatalf("%s: second migrate: %v", name, err)
+		}
+	}
+}
+
+func TestMigrateRollbackKeepsPreexistingMDDir(t *testing.T) {
+	fx := msetup(t)
+	os.MkdirAll(filepath.Join(fx.root, ".md"), 0o755)
+	fx.upErr = os.ErrPermission
+	fx.migrate()
+	if site.HasMDConfig(fx.root) || !exists(filepath.Join(fx.root, ".md")) {
+		t.Fatal("md dir should stay, config removed")
+	}
+}

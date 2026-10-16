@@ -43,8 +43,8 @@ func FromDDEV(s site.Site) site.MDConfig {
 	return c
 }
 
-func Migrate(root string, r run.Runner, home string, ports config.Ports, up func(site.Site) error) error {
-	root, err := filepath.Abs(root)
+func Migrate(root string, r run.Runner, home string, ports config.Ports, up func(site.Site) error) (err error) {
+	root, err = filepath.Abs(root)
 	if err != nil {
 		return err
 	}
@@ -70,9 +70,20 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	if err := guard.CheckDBVersion(r, s); err != nil {
 		return err
 	}
+	mdDir := filepath.Join(root, ".md")
+	mdDirExisted := exists(mdDir)
 	if err := site.WriteMDConfig(root, FromDDEV(s)); err != nil {
 		return err
 	}
+	defer func() {
+		if err == nil {
+			return
+		}
+		os.Remove(filepath.Join(mdDir, "config.yaml"))
+		if !mdDirExisted {
+			os.Remove(mdDir)
+		}
+	}()
 	s, err = site.Load(root)
 	if err != nil {
 		return err
