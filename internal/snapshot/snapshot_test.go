@@ -170,3 +170,30 @@ func TestRestoreImportFailureMentionsPreSnapshot(t *testing.T) {
 		t.Fatal("pre-restore file missing")
 	}
 }
+
+func TestMySQLClients(t *testing.T) {
+	s := newSite(t)
+	s.DBType = "mysql"
+	home := t.TempDir()
+	r := &run.FakeRunner{Out: map[string]string{}}
+	snap, err := Create(home, s, r, "x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Restore(home, s, r, snap); err != nil {
+		t.Fatal(err)
+	}
+	var cs []string
+	for _, c := range r.Calls {
+		cs = append(cs, strings.Join(c, " "))
+	}
+	all := strings.Join(cs, "\n")
+	for _, want := range []string{"ddev-ee249-qa-db mysqldump --single-transaction", "-i ddev-ee249-qa-db mysql -udb -pdb -e ", "-i ddev-ee249-qa-db mysql -udb -pdb db"} {
+		if !strings.Contains(all, want) {
+			t.Fatalf("missing %q in\n%s", want, all)
+		}
+	}
+	if strings.Contains(all, "mariadb") {
+		t.Fatalf("mariadb client used:\n%s", all)
+	}
+}

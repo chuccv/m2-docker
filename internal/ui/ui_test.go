@@ -315,3 +315,29 @@ func TestOriginHostMustMatchRequestHost(t *testing.T) {
 		t.Fatalf("actions called: %v", fa.calls)
 	}
 }
+
+func TestPhpMyAdminLink(t *testing.T) {
+	root, home := t.TempDir(), t.TempDir()
+	cfg := "name: %s\ntype: magento2\nphp_version: \"8.3\"\nwebserver_type: nginx-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"
+	writeSite(t, root, "withpma", fmt.Sprintf(cfg, "withpma"))
+	writeSite(t, root, "nopma", fmt.Sprintf(cfg, "nopma"))
+	writeSite(t, root, "mdpma", fmt.Sprintf(cfg, "mdpma"))
+	os.WriteFile(filepath.Join(root, "withpma", ".ddev", "docker-compose.phpmyadmin.yaml"), []byte("services: {}\n"), 0o644)
+	os.MkdirAll(filepath.Join(root, "mdpma", ".md"), 0o755)
+	os.WriteFile(filepath.Join(root, "mdpma", ".md", "config.yaml"), []byte("name: mdpma\nphp: \"8.3\"\nphpmyadmin: true\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"), 0o644)
+	os.WriteFile(filepath.Join(home, "config.yaml"), []byte("ports:\n  https: 9443\n  phpmyadmin_https: 9037\n"), 0o644)
+	old := ddevGlobalConfig
+	defer func() { ddevGlobalConfig = old }()
+	ddevGlobalConfig = filepath.Join(t.TempDir(), "missing.yaml")
+	h := newServer(home, &run.FakeRunner{Out: map[string]string{}}, &fakeActions{}, []string{root})
+	views := decodeSites(t, do(h, "GET", "/api/sites", "", nil).Body.Bytes())
+	if views["withpma"].URLs["phpmyadmin"] != "https://withpma.ddev.site:8037" {
+		t.Fatalf("ddev: %v", views["withpma"].URLs)
+	}
+	if views["mdpma"].URLs["phpmyadmin"] != "https://mdpma.ddev.site:9037" {
+		t.Fatalf("md: %v", views["mdpma"].URLs)
+	}
+	if _, ok := views["nopma"].URLs["phpmyadmin"]; ok {
+		t.Fatalf("unexpected: %v", views["nopma"].URLs)
+	}
+}

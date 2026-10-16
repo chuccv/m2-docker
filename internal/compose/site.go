@@ -38,10 +38,27 @@ func ComposerAuth() string {
 	return ""
 }
 
+func dbService(s site.Site, vol string, labels map[string]string) service {
+	svc := service{
+		Image:         s.DBImage(),
+		ContainerName: "ddev-" + s.Name + "-db",
+		Restart:       "unless-stopped",
+		User:          "1000:1000",
+		Volumes:       []string{vol + ":/var/lib/mysql"},
+		Labels:        labels,
+	}
+	if s.DBType == "mysql" {
+		svc.Environment = []string{"MYSQL_USER=db", "MYSQL_PASSWORD=db", "MYSQL_DATABASE=db", "MYSQL_ROOT_PASSWORD=root"}
+	} else {
+		svc.Environment = []string{"MARIADB_USER=db", "MARIADB_PASSWORD=db", "MARIADB_DATABASE=db"}
+	}
+	return svc
+}
+
 func RenderSite(s site.Site, p Paths) ([]byte, error) {
 	managed := map[string]string{"com.md.managed": "true"}
 	nodeVol := "md-node-" + nodeMajor(s.NodeVersion)
-	dbVol := s.Name + "-mariadb"
+	dbVol := s.DBVolume()
 
 	f := file{
 		Services: map[string]service{
@@ -58,15 +75,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 				ExtraHosts: []string{"host.docker.internal:host-gateway"},
 				Labels:     managed,
 			},
-			"db": {
-				Image:         "mariadb:" + s.DBVersion,
-				ContainerName: "ddev-" + s.Name + "-db",
-				Restart:       "unless-stopped",
-				User:          "1000:1000",
-				Environment:   []string{"MARIADB_USER=db", "MARIADB_PASSWORD=db", "MARIADB_DATABASE=db"},
-				Volumes:       []string{dbVol + ":/var/lib/mysql"},
-				Labels:        managed,
-			},
+			"db": dbService(s, dbVol, managed),
 		},
 		Volumes: map[string]volume{
 			nodeVol: {External: true},
@@ -97,6 +106,26 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 			Labels:        managed,
 		}
 		f.Volumes[redisVol] = volume{External: true}
+	}
+	if s.Varnish != "" {
+		f.Services["varnish"] = service{
+			Image:         "varnish:" + s.Varnish,
+			ContainerName: "ddev-" + s.Name + "-varnish",
+			Restart:       "unless-stopped",
+			DependsOn:     []string{"web"},
+			Volumes:       []string{p.Home + "/sites/" + s.Name + "/default.vcl:/etc/varnish/default.vcl:ro"},
+			Labels:        managed,
+		}
+	}
+	if s.PhpMyAdmin {
+		f.Services["phpmyadmin"] = service{
+			Image:         "phpmyadmin:5",
+			ContainerName: "ddev-" + s.Name + "-phpmyadmin",
+			Restart:       "unless-stopped",
+			DependsOn:     []string{"db"},
+			Environment:   []string{"PMA_HOST=db", "PMA_USER=db", "PMA_PASSWORD=db", "UPLOAD_LIMIT=1G"},
+			Labels:        managed,
+		}
 	}
 	return marshal(f)
 }

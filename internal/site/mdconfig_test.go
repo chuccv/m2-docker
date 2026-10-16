@@ -207,3 +207,52 @@ func TestLoadHostnamesValidatedLowercasedDeduped(t *testing.T) {
 		t.Fatalf("err %v", err)
 	}
 }
+
+func TestLoadMDVarnishForms(t *testing.T) {
+	for body, want := range map[string]string{"varnish: true\n": "6.0", "varnish: \"7.4\"\n": "7.4", "varnish: 6.0\n": "6.0", "varnish: false\n": "", "php: \"8.3\"\n": ""} {
+		dir := t.TempDir()
+		writeFile(t, filepath.Join(dir, ".md", "config.yaml"), body)
+		s, err := Load(dir)
+		if err != nil || s.Varnish != want {
+			t.Fatalf("%q: %v %q", body, err, s.Varnish)
+		}
+	}
+}
+
+func TestLoadMDElasticsearch(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "search_engine: elasticsearch\nsearch: \"7.17.14\"\n")
+	s, err := Load(dir)
+	if err != nil || s.SearchEngine != "elasticsearch" || s.SearchKey() != "elasticsearch:7.17.14" {
+		t.Fatalf("%v %+v", err, s)
+	}
+}
+
+func TestLoadMDPhpMyAdmin(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "phpmyadmin: true\n")
+	s, err := Load(dir)
+	if err != nil || !s.PhpMyAdmin {
+		t.Fatalf("%v %+v", err, s)
+	}
+}
+
+func TestLoadMDElasticsearchDefaultVersion(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "search_engine: elasticsearch\n")
+	s, err := Load(dir)
+	if err != nil || s.SearchVersion != "7.17.14" || s.SearchKey() != "elasticsearch:7.17.14" {
+		t.Fatalf("%v %+v", err, s)
+	}
+}
+
+func TestLoadMDIgnoresStrayDDEVMutagen(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "php: \"8.3\"\n")
+	writeFile(t, filepath.Join(dir, ".ddev", "docker-compose.mutagen.yaml"), "")
+	writeFile(t, filepath.Join(dir, ".ddev", "config.yaml"), "name: a\nperformance_mode: mutagen\n")
+	s, err := Load(dir)
+	if err != nil || s.HasAddon("mutagen") {
+		t.Fatalf("%v %+v", err, s)
+	}
+}

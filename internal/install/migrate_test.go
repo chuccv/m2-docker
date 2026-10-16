@@ -167,9 +167,9 @@ func TestMigrateRefusesWithoutDDEV(t *testing.T) {
 
 func TestMigrateUnsupportedWritesNothing(t *testing.T) {
 	fx := msetup(t)
-	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.varnish.yaml"), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.rabbitmq.yaml"), []byte("x"), 0o644)
 	cs, err := fx.migrate()
-	if err == nil || !strings.Contains(err.Error(), "varnish") || len(cs) != 0 || site.HasMDConfig(fx.root) || len(fx.upSites) != 0 {
+	if err == nil || !strings.Contains(err.Error(), "rabbitmq") || len(cs) != 0 || site.HasMDConfig(fx.root) || len(fx.upSites) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
 	}
 }
@@ -399,5 +399,45 @@ func TestMigrateKeepsExistingPristineBackup(t *testing.T) {
 	d, _ := os.ReadFile(bak)
 	if string(d) != "pristine" {
 		t.Fatalf("backup overwritten: %q", d)
+	}
+}
+
+func TestMigrateKeepsMutagenAddonForUp(t *testing.T) {
+	fx := msetup(t)
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.mutagen.yaml"), []byte("x"), 0o644)
+	if _, err := fx.migrate(); err != nil {
+		t.Fatal(err)
+	}
+	if len(fx.upSites) != 1 || !fx.upSites[0].HasAddon("mutagen") {
+		t.Fatalf("%+v", fx.upSites)
+	}
+}
+
+func TestFromDDEVVarnish(t *testing.T) {
+	s, err := site.Load(filepath.Join("..", "site", "testdata", "site-varnish"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := FromDDEV(s); string(c.Varnish) != "7.4" {
+		t.Fatalf("%+v", c)
+	}
+}
+
+func TestFromDDEVElasticsearch(t *testing.T) {
+	s, err := site.Load(filepath.Join("..", "site", "testdata", "site-es"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := FromDDEV(s); c.SearchEngine != "elasticsearch" || c.Search != "7.17.14" {
+		t.Fatalf("%+v", c)
+	}
+}
+
+func TestFromDDEVPhpMyAdmin(t *testing.T) {
+	fx := msetup(t)
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.phpmyadmin.yaml"), []byte("x"), 0o644)
+	s, _ := site.Load(fx.root)
+	if c := FromDDEV(s); !c.PhpMyAdmin {
+		t.Fatalf("%+v", c)
 	}
 }

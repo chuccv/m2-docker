@@ -162,6 +162,9 @@ func (e *env) up(s site.Site, home string) error {
 	if err := site.Supported(s); err != nil {
 		return err
 	}
+	if s.HasAddon("mutagen") {
+		fmt.Fprintln(e.writer(), "mutagen bỏ qua trên Linux")
+	}
 	if err := guard.CheckNoDDEV(e.runner, s, cfg.Ports); err != nil {
 		return err
 	}
@@ -184,7 +187,7 @@ func (e *env) up(s site.Site, home string) error {
 	if err != nil {
 		return err
 	}
-	st.add(siteRef{Name: s.Name, Root: s.Root}, s.SearchVersion)
+	st.add(siteRef{Name: s.Name, Root: s.Root}, s.SearchKey())
 	paths := compose.Paths{Home: home, Root: s.Root, ComposerAuth: compose.ComposerAuth()}
 	for _, d := range []string{"certs", "router/dynamic"} {
 		if err := os.MkdirAll(filepath.Join(home, d), 0o755); err != nil {
@@ -227,6 +230,11 @@ func (e *env) up(s site.Site, home string) error {
 	if err := writeFile(file, body); err != nil {
 		return err
 	}
+	if s.Varnish != "" {
+		if err := writeFile(filepath.Join(filepath.Dir(file), "default.vcl"), compose.RenderVCL()); err != nil {
+			return err
+		}
+	}
 	runName, runBody, reload := "nginx-run.conf", website.RenderNginxRun(s.Websites), []string{"nginx", "-s", "reload"}
 	if s.IsApache() {
 		runName, runBody, reload = "apache-run.conf", website.RenderApacheRun(s.Websites), []string{"apachectl", "-k", "graceful"}
@@ -249,8 +257,8 @@ func (e *env) up(s site.Site, home string) error {
 		}
 	}
 	net := "md-" + s.Name + "_default"
-	if s.SearchVersion != "" {
-		e.connect("--alias", "opensearch", net, "md-opensearch-"+s.SearchVersion)
+	if key := s.SearchKey(); key != "" {
+		e.connect("--alias", site.SearchAlias(key), net, site.SearchContainer(key))
 	}
 	e.connect("--alias", "xhgui", net, "md-xhgui")
 	var aliases []string

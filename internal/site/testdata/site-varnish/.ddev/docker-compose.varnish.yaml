@@ -1,0 +1,4 @@
+services:
+  varnish:
+    container_name: ddev-${DDEV_SITENAME}-varnish
+    image: varnish:7.4

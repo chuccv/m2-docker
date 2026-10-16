@@ -1,0 +1,60 @@
+http:
+    middlewares:
+        ee249-qa-https:
+            redirectScheme:
+                permanent: true
+                port: "443"
+                scheme: https
+    routers:
+        ee249-qa-mailpit:
+            entryPoints:
+                - mailpit
+            rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
+            service: ee249-qa-mailpit
+        ee249-qa-mailpit-secure:
+            entryPoints:
+                - mailpit-secure
+            rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
+            service: ee249-qa-mailpit
+            tls: {}
+        ee249-qa-web:
+            entryPoints:
+                - web
+            middlewares:
+                - ee249-qa-https
+            rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
+            service: ee249-qa-web
+        ee249-qa-web-secure:
+            entryPoints:
+                - websecure
+            rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
+            service: ee249-qa-web
+            tls: {}
+        ee249-qa-xhgui:
+            entryPoints:
+                - xhgui
+            rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
+            service: ee249-qa-xhgui
+        ee249-qa-xhgui-secure:
+            entryPoints:
+                - xhgui-secure
+            rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
+            service: ee249-qa-xhgui
+            tls: {}
+    services:
+        ee249-qa-mailpit:
+            loadBalancer:
+                servers:
+                    - url: http://ddev-ee249-qa-web:8025
+        ee249-qa-web:
+            loadBalancer:
+                servers:
+                    - url: http://ddev-ee249-qa-varnish:80
+        ee249-qa-xhgui:
+            loadBalancer:
+                servers:
+                    - url: http://md-xhgui:80
+tls:
+    certificates:
+        - certFile: /certs/ee249-qa.crt
+          keyFile: /certs/ee249-qa.key

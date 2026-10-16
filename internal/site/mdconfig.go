@@ -16,6 +16,22 @@ type Website struct {
 	Type string `yaml:"type"`
 }
 
+type VarnishSpec string
+
+func (v *VarnishSpec) UnmarshalYAML(n *yaml.Node) error {
+	switch n.Value {
+	case "true":
+		*v = DefaultVarnish
+	case "false", "":
+		*v = ""
+	default:
+		*v = VarnishSpec(n.Value)
+	}
+	return nil
+}
+
+const DefaultVarnish = "6.0"
+
 type MDConfig struct {
 	Name     string `yaml:"name"`
 	Type     string `yaml:"type"`
@@ -24,13 +40,16 @@ type MDConfig struct {
 		Type    string `yaml:"type"`
 		Version string `yaml:"version"`
 	} `yaml:"database"`
-	Webserver string    `yaml:"webserver,omitempty"`
-	Search    string    `yaml:"search"`
-	Node      string    `yaml:"node"`
-	Redis     bool      `yaml:"redis"`
-	Hostnames []string  `yaml:"hostnames"`
-	Websites  []Website `yaml:"websites"`
-	Magento   struct {
+	Webserver    string      `yaml:"webserver,omitempty"`
+	Search       string      `yaml:"search"`
+	SearchEngine string      `yaml:"search_engine,omitempty"`
+	Varnish      VarnishSpec `yaml:"varnish,omitempty"`
+	PhpMyAdmin   bool        `yaml:"phpmyadmin,omitempty"`
+	Node         string      `yaml:"node"`
+	Redis        bool        `yaml:"redis"`
+	Hostnames    []string    `yaml:"hostnames"`
+	Websites     []Website   `yaml:"websites"`
+	Magento      struct {
 		Version string `yaml:"version"`
 		Edition string `yaml:"edition"`
 	} `yaml:"magento"`
@@ -136,9 +155,15 @@ func loadMD(root string) (Site, error) {
 		Hostnames:     hostnames,
 		Websites:      c.Websites,
 		SearchVersion: c.Search,
+		SearchEngine:  c.SearchEngine,
+		Varnish:       string(c.Varnish),
+		PhpMyAdmin:    c.PhpMyAdmin,
 	}
 	if c.Redis {
 		s.Addons = []string{"redis"}
+	}
+	if s.SearchEngine == "elasticsearch" && s.SearchVersion == "" {
+		s.SearchVersion = DefaultElasticsearch
 	}
 	return s, nil
 }

@@ -395,3 +395,41 @@ func TestMigrateCmdRefusesMigratedSite(t *testing.T) {
 		t.Fatalf("err %v calls %v", err, f.Calls)
 	}
 }
+
+func TestUpWritesVCLWhenVarnish(t *testing.T) {
+	e, _, home, dir := ddevEnv(t)
+	cfg := "name: ee249-qa\ntype: magento2\nphp: \"8.5\"\nnode: \"22.11.0\"\nvarnish: true\ndatabase:\n  type: mariadb\n  version: \"11.4\"\n"
+	os.MkdirAll(filepath.Join(dir, ".md"), 0o755)
+	os.WriteFile(filepath.Join(dir, ".md", "config.yaml"), []byte(cfg), 0o644)
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(home, "sites", "ee249-qa", "default.vcl"))
+	if err != nil || !strings.Contains(string(b), `.host = "web"`) {
+		t.Fatalf("vcl: %v %s", err, b)
+	}
+}
+
+func TestUpConnectsElasticsearchAlias(t *testing.T) {
+	e, f, _, dir := ddevEnv(t)
+	cfg := "name: ee249-qa\ntype: magento2\nphp: \"8.5\"\nnode: \"22.11.0\"\nsearch_engine: elasticsearch\nsearch: \"7.17.14\"\ndatabase:\n  type: mariadb\n  version: \"11.4\"\n"
+	os.MkdirAll(filepath.Join(dir, ".md"), 0o755)
+	os.WriteFile(filepath.Join(dir, ".md", "config.yaml"), []byte(cfg), 0o644)
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	if index(calls(f), "docker network connect --alias elasticsearch md-ee249-qa_default md-elasticsearch-7.17.14") < 0 {
+		t.Fatalf("%v", calls(f))
+	}
+}
+
+func TestMigrateCmdNotesMutagenOnce(t *testing.T) {
+	e, _, _, dir := ddevEnv(t)
+	os.WriteFile(filepath.Join(dir, ".ddev", "docker-compose.mutagen.yaml"), []byte("x"), 0o644)
+	if err := exec(t, e, "migrate"); err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(e.out.(*strings.Builder).String(), "mutagen bỏ qua trên Linux"); n != 1 {
+		t.Fatalf("note printed %d times", n)
+	}
+}

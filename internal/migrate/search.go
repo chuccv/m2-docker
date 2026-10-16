@@ -20,11 +20,15 @@ func EnsureSearchMigrated(home string, s site.Site, r run.Runner) error {
 		return nil
 	}
 	web := []string{"exec", "-u", "1000", "-w", "/var/www/html", "ddev-" + s.Name + "-web", "php", "bin/magento"}
+	prefixPath := "catalog/search/opensearch_index_prefix"
+	if s.SearchEngine == "elasticsearch" {
+		prefixPath = "catalog/search/elasticsearch7_index_prefix"
+	}
 	steps := []struct {
 		label string
 		args  []string
 	}{
-		{"config:set opensearch_index_prefix", []string{"config:set", "--lock-env", "catalog/search/opensearch_index_prefix", Prefix(s.Name)}},
+		{"config:set index_prefix", []string{"config:set", "--lock-env", prefixPath, Prefix(s.Name)}},
 		{"indexer:reindex catalogsearch_fulltext", []string{"indexer:reindex", "catalogsearch_fulltext"}},
 	}
 	for _, st := range steps {

@@ -28,8 +28,12 @@ func split(l string) (string, string) {
 
 const xhguiImage = "ddev/ddev-xhgui:v1.25.2"
 
+func isDBVolume(v string) bool {
+	return strings.HasSuffix(v, "-mariadb") || strings.HasSuffix(v, "-mysql")
+}
+
 func protectedVolume(v string) bool {
-	if strings.HasPrefix(v, "md-") || strings.HasSuffix(v, "-mariadb") {
+	if strings.HasPrefix(v, "md-") || isDBVolume(v) {
 		return true
 	}
 	return strings.HasPrefix(v, "ddev-") && strings.HasSuffix(v, "_redis")
@@ -79,7 +83,7 @@ func Plan(r run.Runner, sites []site.Site) ([]Item, error) {
 
 	known := map[string]bool{}
 	for _, s := range sites {
-		known[s.Name+"-mariadb"] = true
+		known[s.DBVolume()] = true
 	}
 	out, err = r.Run("docker", "volume", "ls", "-f", "dangling=true", "-q")
 	if err != nil {
@@ -89,7 +93,7 @@ func Plan(r run.Runner, sites []site.Site) ([]Item, error) {
 	for _, v := range lines(out) {
 		switch {
 		case known[v]:
-		case strings.HasSuffix(v, "-mariadb"):
+		case isDBVolume(v):
 			orphans = append(orphans, Item{"db-orphan", v, ""})
 		case protectedVolume(v):
 		default:

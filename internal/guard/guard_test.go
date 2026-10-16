@@ -195,3 +195,23 @@ func TestCheckExtraComposeMDConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCheckDBVersionMySQL(t *testing.T) {
+	s := site.Site{Name: "shop-a", DBType: "mysql", DBVersion: "8.0"}
+	key := "docker run --rm -u 1000:1000 --entrypoint cat -v shop-a-mysql:/v:ro mysql:8.0 /v/db_mysql_version.txt"
+	if err := CheckDBVersion(&run.FakeRunner{Out: map[string]string{key: "mysql_8.0\n"}}, s); err != nil {
+		t.Fatal(err)
+	}
+	err := CheckDBVersion(&run.FakeRunner{Out: map[string]string{key: "mysql_5.7\n"}}, s)
+	if err == nil || !strings.Contains(err.Error(), "shop-a-mysql") || !strings.Contains(err.Error(), "5.7") {
+		t.Fatalf("got %v", err)
+	}
+	label := `docker volume inspect -f {{index .Labels "com.md.db"}} shop-a-mysql`
+	if err := CheckDBVersion(&run.FakeRunner{Out: map[string]string{label: "mysql_8.0"}}, s); err != nil {
+		t.Fatal(err)
+	}
+	err = CheckDBVersion(&run.FakeRunner{Out: map[string]string{}}, s)
+	if err == nil || !strings.Contains(err.Error(), "cannot be determined") {
+		t.Fatalf("got %v", err)
+	}
+}

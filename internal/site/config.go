@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -13,7 +14,8 @@ import (
 type Site struct {
 	Name, Root, Type, PHPVersion, DBType, DBVersion, NodeVersion, Webserver string
 	Hostnames                                                               []string
-	SearchVersion                                                           string
+	SearchVersion, SearchEngine, Varnish                                    string
+	PhpMyAdmin                                                              bool
 	Addons                                                                  []string
 	Websites                                                                []Website
 }
@@ -83,6 +85,20 @@ func Load(root string) (Site, error) {
 		s.NodeVersion = "22"
 	}
 	s.SearchVersion = searchVersion(ddev)
+	if s.SearchVersion == "" {
+		if v := composeImageTag(ddev, "elasticsearch", "elasticsearch"); v != "" {
+			s.SearchVersion, s.SearchEngine = v, "elasticsearch"
+		} else if s.HasAddon("elasticsearch") {
+			s.SearchVersion, s.SearchEngine = DefaultElasticsearch, "elasticsearch"
+		}
+	}
+	if s.HasAddon("varnish") {
+		s.Varnish = composeImageTag(ddev, "varnish", "varnish")
+		if s.Varnish == "" {
+			s.Varnish = DefaultVarnish
+		}
+	}
+	s.PhpMyAdmin = s.HasAddon("phpmyadmin")
 	return s, nil
 }
 
@@ -99,6 +115,20 @@ func searchVersion(ddev string) string {
 		return "latest"
 	}
 	return ""
+}
+
+const DefaultElasticsearch = "7.17.14"
+
+func composeImageTag(ddev, addon, repo string) string {
+	data, err := os.ReadFile(filepath.Join(ddev, "docker-compose."+addon+".yaml"))
+	if err != nil {
+		return ""
+	}
+	m := regexp.MustCompile(`(?m)^\s*image:\s*["']?(?:[\w.\-]+(?:/[\w.\-]+)*/)?` + repo + `:([\w.\-]+)`).FindSubmatch(data)
+	if m == nil {
+		return ""
+	}
+	return string(m[1])
 }
 
 func contains(l []string, v string) bool {

@@ -30,7 +30,7 @@ func IsBlank(root string) (bool, error) {
 }
 
 func FromDDEV(s site.Site) site.MDConfig {
-	c := site.MDConfig{Name: s.Name, Type: s.Type, PHP: s.PHPVersion, Search: s.SearchVersion, Node: s.NodeVersion}
+	c := site.MDConfig{Name: s.Name, Type: s.Type, PHP: s.PHPVersion, Search: s.SearchVersion, SearchEngine: s.SearchEngine, Node: s.NodeVersion, Varnish: site.VarnishSpec(s.Varnish), PhpMyAdmin: s.PhpMyAdmin}
 	if s.IsApache() {
 		c.Webserver = "apache"
 	}
@@ -65,6 +65,7 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	if err := site.Supported(s); err != nil {
 		return err
 	}
+	mutagen := s.HasAddon("mutagen")
 	if err := guard.CheckNoDDEV(r, s, ports); err != nil {
 		return err
 	}
@@ -90,8 +91,8 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 		}
 		if upRan && exists(stack.ComposeFile(home, s.Name)) {
 			var versions []string
-			if s.SearchVersion != "" {
-				versions = []string{s.SearchVersion}
+			if key := s.SearchKey(); key != "" {
+				versions = []string{key}
 			}
 			if derr := stack.Down(r, home, s.Name, versions); derr != nil {
 				err = fmt.Errorf("%w; compose down: %v", err, derr)
@@ -107,6 +108,9 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	s, err = site.Load(root)
 	if err != nil {
 		return err
+	}
+	if mutagen {
+		s.Addons = append(s.Addons, "mutagen")
 	}
 	warnDDEVNginx(root)
 	if data, rerr := os.ReadFile(envPath); rerr == nil {

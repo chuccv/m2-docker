@@ -2,8 +2,10 @@ package compose
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/chuccv/m2-docker/internal/config"
+	"github.com/chuccv/m2-docker/internal/site"
 )
 
 const XHGuiConfig = `<?php
@@ -43,6 +45,8 @@ func RenderShared(searchVersions []string, cfg config.Config, p Paths) ([]byte, 
 		{"mailpit-secure", ports.MailpitHTTPS},
 		{"xhgui", ports.XHGuiHTTP},
 		{"xhgui-secure", ports.XHGuiHTTPS},
+		{"phpmyadmin", ports.PhpMyAdminHTTP},
+		{"phpmyadmin-secure", ports.PhpMyAdminHTTPS},
 	}
 	cmd := []string{
 		"--providers.file.directory=/etc/traefik/dynamic",
@@ -78,21 +82,37 @@ func RenderShared(searchVersions []string, cfg config.Config, p Paths) ([]byte, 
 		Networks: map[string]network{"md": {Name: "md"}},
 		Volumes:  map[string]volume{"md-xhgui-data": {}},
 	}
-	for _, v := range searchVersions {
-		name := "md-opensearch-" + v
-		f.Services[name] = service{
-			Image:         "opensearchproject/opensearch:" + v,
-			Entrypoint:    []string{"sh", "-c", "for p in analysis-icu analysis-phonetic; do ./bin/opensearch-plugin list | grep -qx $$p || ./bin/opensearch-plugin install --batch $$p; done; exec ./opensearch-docker-entrypoint.sh opensearch"},
-			ContainerName: name,
-			Restart:       "unless-stopped",
-			Environment: []string{
-				"discovery.type=single-node",
-				"DISABLE_INSTALL_DEMO_CONFIG=true",
-				"DISABLE_SECURITY_PLUGIN=true",
-				"OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m",
-			},
-			Volumes:  []string{name + "-data:/usr/share/opensearch/data", name + "-plugins:/usr/share/opensearch/plugins"},
-			Networks: []string{"md"},
+	for _, key := range searchVersions {
+		name := site.SearchContainer(key)
+		if v, ok := strings.CutPrefix(key, "elasticsearch:"); ok {
+			f.Services[name] = service{
+				Image:         "elasticsearch:" + v,
+				Entrypoint:    []string{"sh", "-c", "for p in analysis-icu analysis-phonetic; do ./bin/elasticsearch-plugin list | grep -qx $$p || ./bin/elasticsearch-plugin install --batch $$p; done; exec /bin/tini -- /usr/local/bin/docker-entrypoint.sh eswrapper"},
+				ContainerName: name,
+				Restart:       "unless-stopped",
+				Environment: []string{
+					"discovery.type=single-node",
+					"xpack.security.enabled=false",
+					"ES_JAVA_OPTS=-Xms512m -Xmx512m",
+				},
+				Volumes:  []string{name + "-data:/usr/share/elasticsearch/data", name + "-plugins:/usr/share/elasticsearch/plugins"},
+				Networks: []string{"md"},
+			}
+		} else {
+			f.Services[name] = service{
+				Image:         "opensearchproject/opensearch:" + key,
+				Entrypoint:    []string{"sh", "-c", "for p in analysis-icu analysis-phonetic; do ./bin/opensearch-plugin list | grep -qx $$p || ./bin/opensearch-plugin install --batch $$p; done; exec ./opensearch-docker-entrypoint.sh opensearch"},
+				ContainerName: name,
+				Restart:       "unless-stopped",
+				Environment: []string{
+					"discovery.type=single-node",
+					"DISABLE_INSTALL_DEMO_CONFIG=true",
+					"DISABLE_SECURITY_PLUGIN=true",
+					"OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m",
+				},
+				Volumes:  []string{name + "-data:/usr/share/opensearch/data", name + "-plugins:/usr/share/opensearch/plugins"},
+				Networks: []string{"md"},
+			}
 		}
 		f.Volumes[name+"-data"] = volume{}
 		f.Volumes[name+"-plugins"] = volume{}

@@ -34,6 +34,10 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 	svc := func(url string) m {
 		return m{"loadBalancer": m{"servers": []m{{"url": url}}}}
 	}
+	front := fmt.Sprintf("http://ddev-%s-web:80", s.Name)
+	if s.Varnish != "" {
+		front = fmt.Sprintf("http://ddev-%s-varnish:80", s.Name)
+	}
 	doc := m{
 		"http": m{
 			"routers": m{
@@ -48,12 +52,20 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 				redirect: m{"redirectScheme": m{"scheme": "https", "port": strconv.Itoa(ports.HTTPS), "permanent": true}},
 			},
 			"services": m{
-				web:     svc(fmt.Sprintf("http://ddev-%s-web:80", s.Name)),
+				web:     svc(front),
 				mailpit: svc(fmt.Sprintf("http://ddev-%s-web:8025", s.Name)),
 				xhgui:   svc("http://md-xhgui:80"),
 			},
 		},
 		"tls": m{"certificates": []m{{"certFile": crt, "keyFile": key}}},
+	}
+	if s.PhpMyAdmin {
+		pma := s.Name + "-phpmyadmin"
+		h := doc["http"].(m)
+		r := h["routers"].(m)
+		r[pma+"-secure"] = secure("phpmyadmin-secure", pma)
+		r[pma] = plain("phpmyadmin", pma)
+		h["services"].(m)[pma] = svc(fmt.Sprintf("http://ddev-%s-phpmyadmin:80", s.Name))
 	}
 	out, _ := yaml.Marshal(doc)
 	return out

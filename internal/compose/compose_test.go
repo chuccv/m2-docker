@@ -69,7 +69,7 @@ func TestRenderSiteNoRedis(t *testing.T) {
 }
 
 func TestRenderSharedDefaultPorts(t *testing.T) {
-	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
+	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142, PhpMyAdminHTTP: 8036, PhpMyAdminHTTPS: 8037}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestRenderSharedDefaultPorts(t *testing.T) {
 }
 
 func TestRenderSharedCustomPorts(t *testing.T) {
-	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 9080, HTTPS: 9443, MailpitHTTP: 9025, MailpitHTTPS: 9026, XHGuiHTTP: 9143, XHGuiHTTPS: 9142}}, paths)
+	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 9080, HTTPS: 9443, MailpitHTTP: 9025, MailpitHTTPS: 9026, XHGuiHTTP: 9143, XHGuiHTTPS: 9142, PhpMyAdminHTTP: 9036, PhpMyAdminHTTPS: 9037}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestRenderSharedCustomPorts(t *testing.T) {
 }
 
 func TestSharedOpensearchDisablesSecurityAndInstallsPlugins(t *testing.T) {
-	out, err := RenderShared([]string{"latest"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
+	out, err := RenderShared([]string{"latest"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142, PhpMyAdminHTTP: 8036, PhpMyAdminHTTPS: 8037}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestSharedOpensearchDisablesSecurityAndInstallsPlugins(t *testing.T) {
 }
 
 func TestSharedXhguiResolvesItsOwnUpstream(t *testing.T) {
-	out, err := RenderShared(nil, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
+	out, err := RenderShared(nil, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142, PhpMyAdminHTTP: 8036, PhpMyAdminHTTPS: 8037}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func TestSharedXhguiResolvesItsOwnUpstream(t *testing.T) {
 }
 
 func TestSharedHasNoBuildKey(t *testing.T) {
-	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
+	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142, PhpMyAdminHTTP: 8036, PhpMyAdminHTTPS: 8037}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,4 +170,61 @@ func TestRenderSiteMountsNginxRun(t *testing.T) {
 	if !strings.Contains(string(out), "/home/user/.md/sites/ee249-qa/nginx-run.conf:/etc/nginx/md-run.conf:ro") {
 		t.Fatalf("got %s", out)
 	}
+}
+
+func TestRenderSiteVarnish(t *testing.T) {
+	s := loadSite(t, "ee249-qa")
+	s.Varnish = "6.0"
+	out, err := RenderSite(s, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "site-varnish.yaml", out)
+}
+
+func TestRenderVCL(t *testing.T) {
+	golden(t, "default.vcl", RenderVCL())
+	if strings.Contains(string(RenderVCL()), "{{") || strings.Contains(string(RenderVCL()), "/*") || strings.Contains(string(RenderVCL()), "#") {
+		t.Fatal("placeholder or comment left in VCL")
+	}
+}
+
+func TestRenderSharedElasticsearch(t *testing.T) {
+	out, err := RenderShared([]string{"2.19.1", "elasticsearch:7.17.14"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142, PhpMyAdminHTTP: 8036, PhpMyAdminHTTPS: 8037}}, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "shared-elasticsearch.yaml", out)
+}
+
+func TestRenderSitePhpMyAdmin(t *testing.T) {
+	s := loadSite(t, "ee249-qa")
+	s.PhpMyAdmin = true
+	out, err := RenderSite(s, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "site-phpmyadmin.yaml", out)
+}
+
+func TestSharedHasPhpMyAdminEntrypoints(t *testing.T) {
+	out, err := RenderShared(nil, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142, PhpMyAdminHTTP: 9036, PhpMyAdminHTTPS: 9037}}, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"--entrypoints.phpmyadmin.address=:9036", "--entrypoints.phpmyadmin-secure.address=:9037", "127.0.0.1:9036:9036", "127.0.0.1:9037:9037"} {
+		if !strings.Contains(string(out), want) {
+			t.Fatalf("missing %q", want)
+		}
+	}
+}
+
+func TestRenderSiteMySQL(t *testing.T) {
+	s := loadSite(t, "ee249-qa")
+	s.DBType, s.DBVersion = "mysql", "8.0"
+	out, err := RenderSite(s, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "site-mysql.yaml", out)
 }

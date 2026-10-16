@@ -59,7 +59,7 @@ func TestApplyNeverDeletesDB(t *testing.T) {
 
 func TestPlanSkipsProtectedVolumesAndXhguiImage(t *testing.T) {
 	r := fake()
-	r.Out["docker volume ls -f dangling=true -q"] = "md-opensearch-latest-data\nmd-opensearch-latest-plugins\nmd-node-22\nmd-xhgui-data\nddev-ee249-ln_redis\nx-mariadb\nsome-other-volume\n"
+	r.Out["docker volume ls -f dangling=true -q"] = "md-opensearch-latest-data\nmd-opensearch-latest-plugins\nmd-elasticsearch-7.17.14-data\nmd-elasticsearch-7.17.14-plugins\nshop-a-mysql\nmd-node-22\nmd-xhgui-data\nddev-ee249-ln_redis\nx-mariadb\nsome-other-volume\n"
 	r.Out["docker images --format {{.Repository}}:{{.Tag}}\t{{.Size}}"] = "ddev/ddev-xhgui:v1.25.2\t50MB\nddev/ddev-dbserver:v1\t300MB\n"
 	items, err := Plan(r, nil)
 	if err != nil {
