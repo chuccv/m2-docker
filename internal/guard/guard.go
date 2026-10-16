@@ -11,7 +11,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/site"
 )
 
-var ddevPorts = []int{80, 443, 8025, 8026, 8142, 8143}
+var ddevPorts = []int{80, 443, 8025, 8026, 8142, 8143, 8036, 8037}
 
 var allowedCompose = map[string]bool{
 	"opensearch":        true,
@@ -19,6 +19,7 @@ var allowedCompose = map[string]bool{
 	"redis":             true,
 	"mutagen":           true,
 	"varnish":           true,
+	"phpmyadmin":        true,
 	"elasticsearch":     true,
 	"xhgui-extended":    true,
 	"xhgui-ext-route":   true,
@@ -95,7 +96,7 @@ func hasLine(out, want string) bool {
 }
 
 func usesDDEVPort(p config.Ports) bool {
-	for _, mine := range []int{p.HTTP, p.HTTPS, p.MailpitHTTP, p.MailpitHTTPS, p.XHGuiHTTP, p.XHGuiHTTPS} {
+	for _, mine := range []int{p.HTTP, p.HTTPS, p.MailpitHTTP, p.MailpitHTTPS, p.XHGuiHTTP, p.XHGuiHTTPS, p.PhpMyAdminHTTP, p.PhpMyAdminHTTPS} {
 		for _, d := range ddevPorts {
 			if mine == d {
 				return true

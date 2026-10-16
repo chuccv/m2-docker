@@ -101,5 +101,15 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 			Labels:        managed,
 		}
 	}
+	if s.PhpMyAdmin {
+		f.Services["phpmyadmin"] = service{
+			Image:         "phpmyadmin:5",
+			ContainerName: "ddev-" + s.Name + "-phpmyadmin",
+			Restart:       "unless-stopped",
+			DependsOn:     []string{"db"},
+			Environment:   []string{"PMA_HOST=db", "PMA_USER=db", "PMA_PASSWORD=db", "UPLOAD_LIMIT=1G"},
+			Labels:        managed,
+		}
+	}
 	return marshal(f)
 }

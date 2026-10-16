@@ -409,3 +409,12 @@ func TestFromDDEVElasticsearch(t *testing.T) {
 		t.Fatalf("%+v", c)
 	}
 }
+
+func TestFromDDEVPhpMyAdmin(t *testing.T) {
+	fx := msetup(t)
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.phpmyadmin.yaml"), []byte("x"), 0o644)
+	s, _ := site.Load(fx.root)
+	if c := FromDDEV(s); !c.PhpMyAdmin {
+		t.Fatalf("%+v", c)
+	}
+}

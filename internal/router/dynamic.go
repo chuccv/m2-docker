@@ -59,6 +59,14 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 		},
 		"tls": m{"certificates": []m{{"certFile": crt, "keyFile": key}}},
 	}
+	if s.PhpMyAdmin {
+		pma := s.Name + "-phpmyadmin"
+		h := doc["http"].(m)
+		r := h["routers"].(m)
+		r[pma+"-secure"] = secure("phpmyadmin-secure", pma)
+		r[pma] = plain("phpmyadmin", pma)
+		h["services"].(m)[pma] = svc(fmt.Sprintf("http://ddev-%s-phpmyadmin:80", s.Name))
+	}
 	out, _ := yaml.Marshal(doc)
 	return out
 }

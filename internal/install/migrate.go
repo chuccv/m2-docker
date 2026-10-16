@@ -33,7 +33,7 @@ func IsBlank(root string) (bool, error) {
 }
 
 func FromDDEV(s site.Site) site.MDConfig {
-	c := site.MDConfig{Name: s.Name, Type: s.Type, PHP: s.PHPVersion, Search: s.SearchVersion, SearchEngine: s.SearchEngine, Node: s.NodeVersion, Varnish: site.VarnishSpec(s.Varnish)}
+	c := site.MDConfig{Name: s.Name, Type: s.Type, PHP: s.PHPVersion, Search: s.SearchVersion, SearchEngine: s.SearchEngine, Node: s.NodeVersion, Varnish: site.VarnishSpec(s.Varnish), PhpMyAdmin: s.PhpMyAdmin}
 	c.Database.Type = s.DBType
 	c.Database.Version = s.DBVersion
 	for _, a := range s.Addons {

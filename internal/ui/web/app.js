@@ -95,7 +95,7 @@
       tr.appendChild(el("td", "st " + cls, label));
       var links = el("td");
       if (s.status !== "stopped") {
-        ["storefront", "admin", "mailpit", "xhgui"].forEach(function (k) {
+        ["storefront", "admin", "mailpit", "xhgui", "phpmyadmin"].forEach(function (k) {
           if (s.urls && s.urls[k]) links.appendChild(link(k, s.urls[k]));
         });
       }

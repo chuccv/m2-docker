@@ -81,7 +81,7 @@ func readState(home string) []struct{ Name, Root string } {
 var ddevGlobalConfig = filepath.Join(os.Getenv("HOME"), ".ddev", "global_config.yaml")
 
 func ddevPorts() config.Ports {
-	p := config.Ports{HTTPS: 443, MailpitHTTPS: 8026, XHGuiHTTPS: 8142}
+	p := config.Ports{HTTPS: 443, MailpitHTTPS: 8026, XHGuiHTTPS: 8142, PhpMyAdminHTTPS: 8037}
 	data, err := os.ReadFile(ddevGlobalConfig)
 	if err != nil {
 		return p
@@ -90,11 +90,12 @@ func ddevPorts() config.Ports {
 		Router  string `yaml:"router_https_port"`
 		Mailpit string `yaml:"mailpit_https_port"`
 		XHGui   string `yaml:"xhgui_https_port"`
+		PMA     string `yaml:"phpmyadmin_https_port"`
 	}
 	if yaml.Unmarshal(data, &raw) != nil {
 		return p
 	}
-	for dst, src := range map[*int]string{&p.HTTPS: raw.Router, &p.MailpitHTTPS: raw.Mailpit, &p.XHGuiHTTPS: raw.XHGui} {
+	for dst, src := range map[*int]string{&p.HTTPS: raw.Router, &p.MailpitHTTPS: raw.Mailpit, &p.XHGuiHTTPS: raw.XHGui, &p.PhpMyAdminHTTPS: raw.PMA} {
 		if n, err := strconv.Atoi(src); err == nil && n > 0 {
 			*dst = n
 		}
@@ -153,6 +154,9 @@ func (s *server) siteViews() ([]SiteView, error) {
 			v.URLs["admin"] = v.URLs["storefront"] + "/admin"
 			v.URLs["mailpit"] = fmt.Sprintf("https://%s:%d", h, ports.MailpitHTTPS)
 			v.URLs["xhgui"] = fmt.Sprintf("https://%s:%d", h, ports.XHGuiHTTPS)
+			if x.PhpMyAdmin {
+				v.URLs["phpmyadmin"] = fmt.Sprintf("https://%s:%d", h, ports.PhpMyAdminHTTPS)
+			}
 		}
 		switch {
 		case running["md:"+x.Name]:

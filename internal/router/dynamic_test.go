@@ -95,3 +95,22 @@ func TestRenderTraefikSiteVarnish(t *testing.T) {
 		t.Fatalf("mismatch\n%s", got)
 	}
 }
+
+func TestRenderTraefikSitePhpMyAdmin(t *testing.T) {
+	s := testSite
+	s.PhpMyAdmin = true
+	got := RenderTraefikSite(s, "/certs/ee249-qa.crt", "/certs/ee249-qa.key", ports)
+	path := filepath.Join("testdata", "site-phpmyadmin.yaml")
+	if *update {
+		if err := os.WriteFile(path, got, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(want) != string(got) {
+		t.Fatalf("mismatch\n%s", got)
+	}
+}

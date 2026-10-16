@@ -220,3 +220,18 @@ func TestSupportedRejectsUnknownSearchEngine(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+func TestLoadPhpMyAdminFromAddon(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".ddev"), 0o755)
+	os.WriteFile(filepath.Join(dir, ".ddev", "config.yaml"), []byte("name: a\ntype: magento2\n"), 0o644)
+	s, _ := Load(dir)
+	if s.PhpMyAdmin {
+		t.Fatal("off by default")
+	}
+	os.WriteFile(filepath.Join(dir, ".ddev", "docker-compose.phpmyadmin.yaml"), []byte("services: {}\n"), 0o644)
+	s, _ = Load(dir)
+	if !s.PhpMyAdmin {
+		t.Fatal("addon not detected")
+	}
+}

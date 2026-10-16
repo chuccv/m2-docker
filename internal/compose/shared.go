@@ -45,6 +45,8 @@ func RenderShared(searchVersions []string, cfg config.Config, p Paths) ([]byte, 
 		{"mailpit-secure", ports.MailpitHTTPS},
 		{"xhgui", ports.XHGuiHTTP},
 		{"xhgui-secure", ports.XHGuiHTTPS},
+		{"phpmyadmin", ports.PhpMyAdminHTTP},
+		{"phpmyadmin-secure", ports.PhpMyAdminHTTPS},
 	}
 	cmd := []string{
 		"--providers.file.directory=/etc/traefik/dynamic",

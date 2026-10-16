@@ -187,3 +187,12 @@ func TestLoadMDElasticsearch(t *testing.T) {
 		t.Fatalf("%v %+v", err, s)
 	}
 }
+
+func TestLoadMDPhpMyAdmin(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "phpmyadmin: true\n")
+	s, err := Load(dir)
+	if err != nil || !s.PhpMyAdmin {
+		t.Fatalf("%v %+v", err, s)
+	}
+}

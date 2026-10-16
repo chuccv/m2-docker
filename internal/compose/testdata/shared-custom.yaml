@@ -48,6 +48,8 @@ services:
       - --entrypoints.mailpit-secure.address=:9026
       - --entrypoints.xhgui.address=:9143
       - --entrypoints.xhgui-secure.address=:9142
+      - --entrypoints.phpmyadmin.address=:9036
+      - --entrypoints.phpmyadmin-secure.address=:9037
     ports:
       - 127.0.0.1:9080:9080
       - 127.0.0.1:9443:9443
@@ -55,6 +57,8 @@ services:
       - 127.0.0.1:9026:9026
       - 127.0.0.1:9143:9143
       - 127.0.0.1:9142:9142
+      - 127.0.0.1:9036:9036
+      - 127.0.0.1:9037:9037
     volumes:
       - /home/user/.md/router/dynamic:/etc/traefik/dynamic
       - /home/user/.md/certs:/certs:ro
