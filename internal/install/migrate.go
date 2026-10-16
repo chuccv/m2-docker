@@ -73,9 +73,7 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	}
 	mdDir := filepath.Join(root, ".md")
 	mdDirExisted := exists(mdDir)
-	if err := site.WriteMDConfig(root, FromDDEV(s)); err != nil {
-		return err
-	}
+	upRan := false
 	defer func() {
 		if err == nil {
 			return
@@ -84,12 +82,22 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 		if !mdDirExisted {
 			os.Remove(mdDir)
 		}
+		if upRan {
+			compose := filepath.Join(home, "sites", s.Name, "compose.yaml")
+			if derr := r.Stream("docker", "compose", "-p", "md-"+s.Name, "-f", compose, "down"); derr != nil {
+				err = fmt.Errorf("%w; compose down: %v", err, derr)
+			}
+		}
 	}()
+	if err := site.WriteMDConfig(root, FromDDEV(s)); err != nil {
+		return err
+	}
 	s, err = site.Load(root)
 	if err != nil {
 		return err
 	}
 	warnDDEVNginx(root)
+	upRan = true
 	if err := up(s); err != nil {
 		return err
 	}

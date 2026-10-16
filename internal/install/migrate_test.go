@@ -1,6 +1,7 @@
 package install
 
 import (
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -228,6 +229,59 @@ func TestMigrateRollsBackMDConfigOnFailure(t *testing.T) {
 		if _, err := fx.migrate(); err != nil || !site.HasMDConfig(fx.root) {
 			t.Fatalf("%s: second migrate: %v", name, err)
 		}
+	}
+}
+
+func TestMigrateUpFailureBringsStackDown(t *testing.T) {
+	fx := msetup(t)
+	fx.upErr = os.ErrPermission
+	cs, err := fx.migrate()
+	down := "docker compose -p md-mig -f " + filepath.Join(fx.home, "sites", "mig", "compose.yaml") + " down"
+	if err == nil || idx(cs, down) < 0 || site.HasMDConfig(fx.root) {
+		t.Fatalf("err %v calls %v", err, cs)
+	}
+	for _, c := range cs {
+		if strings.Contains(c, " -v") || strings.Contains(c, "volume rm") {
+			t.Fatalf("destructive call %q", c)
+		}
+	}
+}
+
+func TestMigrateDownFailureIncludedInError(t *testing.T) {
+	fx := msetup(t)
+	fx.upErr = os.ErrPermission
+	fx.f.Err["docker compose -p md-mig -f "+filepath.Join(fx.home, "sites", "mig", "compose.yaml")+" down"] = os.ErrClosed
+	_, err := fx.migrate()
+	if err == nil || !strings.Contains(err.Error(), os.ErrClosed.Error()) || !strings.Contains(err.Error(), os.ErrPermission.Error()) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestMigrateWriteFailureLeavesNothing(t *testing.T) {
+	fx := msetup(t)
+	os.WriteFile(filepath.Join(fx.root, ".md"), []byte("x"), 0o644)
+	cs, err := fx.migrate()
+	if err == nil || len(fx.upSites) != 0 || idx(cs, " down") >= 0 {
+		t.Fatalf("err %v calls %v", err, cs)
+	}
+	if data, _ := os.ReadFile(filepath.Join(fx.root, ".md")); string(data) != "x" {
+		t.Fatal(".md file altered")
+	}
+}
+
+func TestMigrateWarnsDDEVNginx(t *testing.T) {
+	fx := msetup(t)
+	os.MkdirAll(filepath.Join(fx.root, ".ddev", "nginx_full"), 0o755)
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "nginx_full", "x.conf"), []byte("x"), 0o644)
+	rd, wr, _ := os.Pipe()
+	old := os.Stderr
+	os.Stderr = wr
+	_, err := fx.migrate()
+	os.Stderr = old
+	wr.Close()
+	out, _ := io.ReadAll(rd)
+	if err != nil || !strings.Contains(string(out), "nginx custom của DDEV") {
+		t.Fatalf("err %v out %q", err, out)
 	}
 }
 

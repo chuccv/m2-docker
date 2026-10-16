@@ -248,9 +248,6 @@ func (e *env) up(s site.Site, home string) error {
 }
 
 func (e *env) syncWebsites(s site.Site, httpsPort int) error {
-	if !site.HasMDConfig(s.Root) {
-		return nil
-	}
 	if _, err := os.Stat(filepath.Join(s.Root, "app", "etc", "env.php")); err != nil {
 		return nil
 	}
