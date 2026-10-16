@@ -11,7 +11,6 @@ import (
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
 	"github.com/chuccv/m2-docker/internal/stack"
-	"github.com/chuccv/m2-docker/internal/website"
 )
 
 func IsBlank(root string) (bool, error) {
@@ -125,8 +124,7 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 			return err
 		}
 	}
-	_, err = website.Sync(s, s.Websites, r, ports.HTTPS)
-	return err
+	return nil
 }
 
 func warnDDEVNginx(root string) {

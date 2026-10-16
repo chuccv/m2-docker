@@ -120,8 +120,6 @@ func TestMigrateOrder(t *testing.T) {
 		"docker volume inspect mig-mariadb",
 		mWeb + "php bin/magento config:set --lock-env catalog/search/opensearch_index_prefix mig",
 		mWeb + "php bin/magento indexer:reindex catalogsearch_fulltext",
-		"docker exec ddev-mig-web php bin/magento config:set --lock-env --scope=default web/unsecure/base_url https://mig.ddev.site/",
-		"docker exec ddev-mig-web php bin/magento config:set --lock-env --scope=default web/secure/base_url https://mig.ddev.site/",
 	}
 	last := -1
 	for _, o := range order {
@@ -134,14 +132,8 @@ func TestMigrateOrder(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(fx.home, "sites", "mig", ".md-migrated")); err != nil {
 		t.Errorf("marker: %v", err)
 	}
-}
-
-func TestMigrateBaseURLPort(t *testing.T) {
-	fx := msetup(t)
-	fx.ports.HTTPS = 9443
-	cs, err := fx.migrate()
-	if err != nil || idx(cs, "web/secure/base_url https://mig.ddev.site:9443/") < 0 {
-		t.Fatalf("%v %v", err, cs)
+	if idx(cs, "base_url") >= 0 {
+		t.Errorf("migrate must leave base_url sync to up: %v", cs)
 	}
 }
 
@@ -214,9 +206,6 @@ func TestMigrateRollsBackMDConfigOnFailure(t *testing.T) {
 		"up": func(fx *mfixture) { fx.upErr = os.ErrPermission },
 		"reindex": func(fx *mfixture) {
 			fx.f.Err[mWeb+"php bin/magento indexer:reindex catalogsearch_fulltext"] = os.ErrPermission
-		},
-		"lock": func(fx *mfixture) {
-			fx.f.Err["docker exec ddev-mig-web php bin/magento config:set --lock-env --scope=default web/secure/base_url https://mig.ddev.site/"] = os.ErrPermission
 		},
 	}
 	for name, mod := range cases {

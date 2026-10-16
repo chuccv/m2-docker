@@ -359,6 +359,8 @@ func TestUpDoesNotRunSearchMigration(t *testing.T) {
 
 func TestMigrateCmd(t *testing.T) {
 	e, f, home, dir := ddevEnv(t)
+	os.MkdirAll(filepath.Join(dir, "app", "etc"), 0o755)
+	os.WriteFile(filepath.Join(dir, "app", "etc", "env.php"), []byte("<?php"), 0o644)
 	if err := exec(t, e, "migrate"); err != nil {
 		t.Fatal(err)
 	}
@@ -369,8 +371,17 @@ func TestMigrateCmd(t *testing.T) {
 	up := index(cs, "docker compose -p md-ee249-qa")
 	re := index(cs, "indexer:reindex")
 	lock := index(cs, "web/secure/base_url https://ee249-qa.ddev.site")
-	if up < 0 || re < up || lock < re {
+	if up < 0 || re < up || lock < up {
 		t.Fatalf("order up=%d reindex=%d lock=%d\n%s", up, re, lock, strings.Join(cs, "\n"))
+	}
+	n := 0
+	for _, c := range cs {
+		if strings.Contains(c, "config:set --lock-env --scope=default web/secure/base_url") {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("base_url set %d times", n)
 	}
 	if _, err := os.Stat(filepath.Join(home, "sites", "ee249-qa", ".md-migrated")); err != nil {
 		t.Fatal(err)
