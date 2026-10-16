@@ -227,6 +227,11 @@ func (e *env) up(s site.Site, home string) error {
 	if err := writeFile(file, body); err != nil {
 		return err
 	}
+	if s.Varnish != "" {
+		if err := writeFile(filepath.Join(filepath.Dir(file), "default.vcl"), compose.RenderVCL()); err != nil {
+			return err
+		}
+	}
 	runConf := filepath.Join(filepath.Dir(file), "nginx-run.conf")
 	runBody := website.RenderNginxRun(s.Websites)
 	prev, perr := os.ReadFile(runConf)

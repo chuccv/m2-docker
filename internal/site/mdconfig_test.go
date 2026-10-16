@@ -167,3 +167,14 @@ func TestLoadWebsitesLowercasesHost(t *testing.T) {
 		t.Fatalf("%v %+v", err, s)
 	}
 }
+
+func TestLoadMDVarnishForms(t *testing.T) {
+	for body, want := range map[string]string{"varnish: true\n": "6.0", "varnish: \"7.4\"\n": "7.4", "varnish: 6.0\n": "6.0", "varnish: false\n": "", "php: \"8.3\"\n": ""} {
+		dir := t.TempDir()
+		writeFile(t, filepath.Join(dir, ".md", "config.yaml"), body)
+		s, err := Load(dir)
+		if err != nil || s.Varnish != want {
+			t.Fatalf("%q: %v %q", body, err, s.Varnish)
+		}
+	}
+}

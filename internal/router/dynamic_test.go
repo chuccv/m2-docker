@@ -76,3 +76,22 @@ func TestWriteDefaultCert(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRenderTraefikSiteVarnish(t *testing.T) {
+	s := testSite
+	s.Varnish = "6.0"
+	got := RenderTraefikSite(s, "/certs/ee249-qa.crt", "/certs/ee249-qa.key", ports)
+	path := filepath.Join("testdata", "site-varnish.yaml")
+	if *update {
+		if err := os.WriteFile(path, got, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(want) != string(got) {
+		t.Fatalf("mismatch\n%s", got)
+	}
+}

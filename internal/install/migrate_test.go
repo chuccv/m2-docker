@@ -389,3 +389,13 @@ func TestMigrateNotesMutagen(t *testing.T) {
 		t.Fatalf("stderr %q", buf.String())
 	}
 }
+
+func TestFromDDEVVarnish(t *testing.T) {
+	s, err := site.Load(filepath.Join("..", "site", "testdata", "site-varnish"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := FromDDEV(s); string(c.Varnish) != "7.4" {
+		t.Fatalf("%+v", c)
+	}
+}

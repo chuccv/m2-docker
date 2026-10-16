@@ -34,6 +34,10 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 	svc := func(url string) m {
 		return m{"loadBalancer": m{"servers": []m{{"url": url}}}}
 	}
+	front := fmt.Sprintf("http://ddev-%s-web:80", s.Name)
+	if s.Varnish != "" {
+		front = fmt.Sprintf("http://ddev-%s-varnish:80", s.Name)
+	}
 	doc := m{
 		"http": m{
 			"routers": m{
@@ -48,7 +52,7 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 				redirect: m{"redirectScheme": m{"scheme": "https", "port": strconv.Itoa(ports.HTTPS), "permanent": true}},
 			},
 			"services": m{
-				web:     svc(fmt.Sprintf("http://ddev-%s-web:80", s.Name)),
+				web:     svc(front),
 				mailpit: svc(fmt.Sprintf("http://ddev-%s-web:8025", s.Name)),
 				xhgui:   svc("http://md-xhgui:80"),
 			},

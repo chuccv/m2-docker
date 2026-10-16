@@ -25,6 +25,7 @@ type service struct {
 	Restart       string            `yaml:"restart,omitempty"`
 	User          string            `yaml:"user,omitempty"`
 	Command       []string          `yaml:"command,omitempty"`
+	DependsOn     []string          `yaml:"depends_on,omitempty"`
 	Environment   []string          `yaml:"environment,omitempty"`
 	Ports         []string          `yaml:"ports,omitempty"`
 	Volumes       []string          `yaml:"volumes,omitempty"`

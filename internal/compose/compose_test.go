@@ -155,3 +155,20 @@ func TestRenderSiteMountsNginxRun(t *testing.T) {
 		t.Fatalf("got %s", out)
 	}
 }
+
+func TestRenderSiteVarnish(t *testing.T) {
+	s := loadSite(t, "ee249-qa")
+	s.Varnish = "6.0"
+	out, err := RenderSite(s, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "site-varnish.yaml", out)
+}
+
+func TestRenderVCL(t *testing.T) {
+	golden(t, "default.vcl", RenderVCL())
+	if strings.Contains(string(RenderVCL()), "{{") || strings.Contains(string(RenderVCL()), "/*") || strings.Contains(string(RenderVCL()), "#") {
+		t.Fatal("placeholder or comment left in VCL")
+	}
+}

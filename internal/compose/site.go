@@ -91,5 +91,15 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 		}
 		f.Volumes[redisVol] = volume{External: true}
 	}
+	if s.Varnish != "" {
+		f.Services["varnish"] = service{
+			Image:         "varnish:" + s.Varnish,
+			ContainerName: "ddev-" + s.Name + "-varnish",
+			Restart:       "unless-stopped",
+			DependsOn:     []string{"web"},
+			Volumes:       []string{p.Home + "/sites/" + s.Name + "/default.vcl:/etc/varnish/default.vcl:ro"},
+			Labels:        managed,
+		}
+	}
 	return marshal(f)
 }

@@ -82,7 +82,7 @@ func TestSupported(t *testing.T) {
 	if err := Supported(load(t, "ee249-qa")); err != nil {
 		t.Fatal(err)
 	}
-	for _, a := range []string{"varnish", "rabbitmq"} {
+	for _, a := range []string{"rabbitmq"} {
 		err := Supported(Site{Type: "magento2", Webserver: "nginx-fpm", Addons: []string{a}})
 		if err == nil || !strings.Contains(err.Error(), a) {
 			t.Fatalf("%s: %v", a, err)
@@ -171,5 +171,26 @@ func TestSupportedRejectsSharedName(t *testing.T) {
 	err := Supported(Site{Name: "shared", Type: "magento2", Webserver: "nginx-fpm", DBType: "mariadb", DBVersion: "11.4"})
 	if err == nil || !strings.Contains(err.Error(), "shared") {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestLoadVarnishFromAddonImage(t *testing.T) {
+	s := load(t, "site-varnish")
+	if s.Varnish != "7.4" {
+		t.Fatalf("got %q", s.Varnish)
+	}
+	if load(t, "ee249-qa").Varnish != "" {
+		t.Fatal("varnish must be off by default")
+	}
+}
+
+func TestLoadVarnishDefaultVersion(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".ddev"), 0o755)
+	os.WriteFile(filepath.Join(dir, ".ddev", "config.yaml"), []byte("name: a\ntype: magento2\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, ".ddev", "docker-compose.varnish.yaml"), []byte("services: {}\n"), 0o644)
+	s, err := Load(dir)
+	if err != nil || s.Varnish != "6.0" {
+		t.Fatalf("%v %q", err, s.Varnish)
 	}
 }
