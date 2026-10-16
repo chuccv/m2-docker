@@ -9,6 +9,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/config"
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/stack"
 )
 
 const (
@@ -323,5 +324,87 @@ func TestInstallRefusesExistingMDConfig(t *testing.T) {
 	cs, err := fx.run()
 	if err == nil || !strings.Contains(err.Error(), "md up") || len(cs) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
+	}
+}
+
+func TestInstallRefusesExistingDBVolume(t *testing.T) {
+	fx := setup(t)
+	delete(fx.f.Err, "docker volume inspect shop-mariadb")
+	cs, err := fx.run()
+	if err == nil || !strings.Contains(err.Error(), "volume DB shop-mariadb đã tồn tại — có thể là DB của site khác") {
+		t.Fatalf("err %v", err)
+	}
+	if site.HasMDConfig(fx.root) || exists(filepath.Join(fx.root, ".md")) || len(fx.upCalls) != 0 || idx(cs, "volume create") >= 0 {
+		t.Fatalf("wrote something: %v", cs)
+	}
+}
+
+func (fx *fixture) upWritesCompose() {
+	fx.opts.Up = func(s site.Site) error {
+		fx.upCalls = append(fx.upCalls, s)
+		cf := stack.ComposeFile(fx.home, s.Name)
+		os.MkdirAll(filepath.Dir(cf), 0o755)
+		return os.WriteFile(cf, []byte("x"), 0o644)
+	}
+}
+
+func TestInstallFailureRollsBack(t *testing.T) {
+	fx := setup(t)
+	fx.upWritesCompose()
+	fx.f.Err[web+"rm -rf /tmp/md-install"] = os.ErrPermission
+	cs, err := fx.run()
+	if err == nil || !strings.Contains(err.Error(), os.ErrPermission.Error()) || !strings.Contains(err.Error(), "docker volume rm shop-mariadb") {
+		t.Fatalf("err %v", err)
+	}
+	if site.HasMDConfig(fx.root) || exists(filepath.Join(fx.root, ".md")) {
+		t.Fatal("md config left behind")
+	}
+	down := idx(cs, "docker compose -p md-shop -f "+stack.ComposeFile(fx.home, "shop")+" down")
+	dis := idx(cs, "docker network disconnect md-shop_default md-router")
+	if down < 0 || dis < 0 || dis > down {
+		t.Fatalf("down %d disconnect %d\n%v", down, dis, cs)
+	}
+	for _, c := range cs {
+		if strings.Contains(c, "volume rm") || strings.Contains(c, " -v") {
+			t.Fatalf("destructive %q", c)
+		}
+	}
+}
+
+func TestInstallUpFailureWithoutComposeSkipsDown(t *testing.T) {
+	fx := setup(t)
+	fx.opts.Up = func(s site.Site) error { return os.ErrPermission }
+	cs, err := fx.run()
+	if err == nil || site.HasMDConfig(fx.root) || idx(cs, " down") >= 0 {
+		t.Fatalf("err %v calls %v", err, cs)
+	}
+}
+
+func TestInstallRollbackKeepsPreexistingMDDir(t *testing.T) {
+	fx := setup(t)
+	os.MkdirAll(filepath.Join(fx.root, ".md"), 0o755)
+	fx.opts.Up = func(s site.Site) error { return os.ErrPermission }
+	fx.run()
+	if site.HasMDConfig(fx.root) || !exists(filepath.Join(fx.root, ".md")) {
+		t.Fatal("md dir should stay, config removed")
+	}
+}
+
+func TestInstallRollbackKeepsNonEmptyMDDir(t *testing.T) {
+	fx := setup(t)
+	fx.opts.Up = func(s site.Site) error {
+		return os.WriteFile(filepath.Join(fx.root, ".md", "other"), []byte("x"), 0o644)
+	}
+	fx.run()
+	if !exists(filepath.Join(fx.root, ".md", "other")) {
+		t.Fatal("foreign file removed")
+	}
+}
+
+func TestInstallSuccessKeepsConfigAndNoVolumeMessage(t *testing.T) {
+	fx := setup(t)
+	_, err := fx.run()
+	if err != nil || !site.HasMDConfig(fx.root) {
+		t.Fatalf("%v", err)
 	}
 }

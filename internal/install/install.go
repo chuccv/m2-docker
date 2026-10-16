@@ -13,6 +13,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/migrate"
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/stack"
 	"github.com/chuccv/m2-docker/internal/website"
 )
 
@@ -100,7 +101,7 @@ func disableTwoFactor(s site.Site, r run.Runner) error {
 	return magento(r, s.Name, "setup:upgrade")
 }
 
-func Install(o Options, r run.Runner, home string, ports config.Ports) error {
+func Install(o Options, r run.Runner, home string, ports config.Ports) (err error) {
 	root, err := filepath.Abs(o.Root)
 	if err != nil {
 		return err
@@ -139,28 +140,55 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) error {
 	if compose.ComposerAuth() == "" {
 		return fmt.Errorf("composer auth.json not found: put Magento keys in $COMPOSER_HOME/auth.json or ~/.composer/auth.json")
 	}
+	name := site.NormalizeName(filepath.Base(root))
+	vol := name + "-mariadb"
+	if _, verr := r.Run("docker", "volume", "inspect", vol); verr == nil {
+		return fmt.Errorf("volume DB %s đã tồn tại — có thể là DB của site khác", vol)
+	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return err
 	}
-	name := site.NormalizeName(filepath.Base(root))
 	cfg := site.MDConfig{Name: name, Type: "magento2", PHP: st.PHP, Search: st.Search, Node: st.Node, Redis: true}
 	cfg.Database.Type = "mariadb"
 	cfg.Database.Version = st.DB
 	cfg.Magento.Version = o.Version
 	cfg.Magento.Edition = o.Edition
+	mdDir := filepath.Join(root, ".md")
+	mdDirExisted := exists(mdDir)
+	upRan, volCreated := false, false
+	defer func() {
+		if err == nil {
+			return
+		}
+		os.Remove(filepath.Join(mdDir, "config.yaml"))
+		if !mdDirExisted {
+			os.Remove(mdDir)
+		}
+		if upRan && exists(stack.ComposeFile(home, name)) {
+			var versions []string
+			if cfg.Search != "" {
+				versions = []string{cfg.Search}
+			}
+			if derr := stack.Down(r, home, name, versions); derr != nil {
+				err = fmt.Errorf("%w; compose down: %v", err, derr)
+			}
+		}
+		if volCreated {
+			err = fmt.Errorf("%w; volume DB %s được giữ lại (không xoá data); nếu cài chưa xong có thể chạy `docker volume rm %s`", err, vol, vol)
+		}
+	}()
 	if err := site.WriteMDConfig(root, cfg); err != nil {
 		return err
 	}
-	vol := name + "-mariadb"
-	if _, err := r.Run("docker", "volume", "inspect", vol); err != nil {
-		if _, err := r.Run("docker", "volume", "create", "--label", "com.md.db=mariadb_"+st.DB, vol); err != nil {
-			return err
-		}
+	if _, err := r.Run("docker", "volume", "create", "--label", "com.md.db=mariadb_"+st.DB, vol); err != nil {
+		return err
 	}
+	volCreated = true
 	s, err := site.Load(root)
 	if err != nil {
 		return err
 	}
+	upRan = true
 	if err := o.Up(s); err != nil {
 		return err
 	}
