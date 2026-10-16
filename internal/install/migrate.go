@@ -10,6 +10,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/migrate"
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/stack"
 	"github.com/chuccv/m2-docker/internal/website"
 )
 
@@ -74,6 +75,9 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	mdDir := filepath.Join(root, ".md")
 	mdDirExisted := exists(mdDir)
 	upRan := false
+	backedUp := false
+	envPath := filepath.Join(root, "app", "etc", "env.php")
+	backup := filepath.Join(home, "sites", s.Name, "env.php.pre-migrate")
 	defer func() {
 		if err == nil {
 			return
@@ -82,11 +86,17 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 		if !mdDirExisted {
 			os.Remove(mdDir)
 		}
-		if upRan {
-			compose := filepath.Join(home, "sites", s.Name, "compose.yaml")
-			if derr := r.Stream("docker", "compose", "-p", "md-"+s.Name, "-f", compose, "down"); derr != nil {
+		if upRan && exists(stack.ComposeFile(home, s.Name)) {
+			var versions []string
+			if s.SearchVersion != "" {
+				versions = []string{s.SearchVersion}
+			}
+			if derr := stack.Down(r, home, s.Name, versions); derr != nil {
 				err = fmt.Errorf("%w; compose down: %v", err, derr)
 			}
+		}
+		if backedUp {
+			fmt.Fprintf(os.Stderr, "env.php đã bị md sửa (index prefix/base_url). Bản gốc: %s. Khôi phục: cp %s %s\n", backup, backup, envPath)
 		}
 	}()
 	if err := site.WriteMDConfig(root, FromDDEV(s)); err != nil {
@@ -97,6 +107,15 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 		return err
 	}
 	warnDDEVNginx(root)
+	if data, rerr := os.ReadFile(envPath); rerr == nil {
+		if err := os.MkdirAll(filepath.Dir(backup), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(backup, data, 0o600); err != nil {
+			return err
+		}
+		backedUp = true
+	}
 	upRan = true
 	if err := up(s); err != nil {
 		return err

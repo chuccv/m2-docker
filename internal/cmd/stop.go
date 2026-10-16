@@ -2,18 +2,12 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/chuccv/m2-docker/internal/stack"
 )
 
 func (e *env) stopSite(home, name string, searchVersions []string) error {
-	net := "md-" + name + "_default"
-	targets := []string{"md-router", "md-xhgui"}
-	for _, v := range searchVersions {
-		targets = append(targets, "md-opensearch-"+v)
-	}
-	for _, c := range targets {
-		e.runner.Run("docker", "network", "disconnect", net, c)
-	}
-	return e.runner.Stream("docker", "compose", "-p", "md-"+name, "-f", siteFile(home, name), "down")
+	return stack.Down(e.runner, home, name, searchVersions)
 }
 
 func (e *env) stopByName(name string) error {

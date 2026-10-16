@@ -12,6 +12,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/config"
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/stack"
 )
 
 const (
@@ -27,6 +28,7 @@ type mfixture struct {
 	upSites    []site.Site
 	upSawMD    bool
 	upErr      error
+	noCompose  bool
 }
 
 func msetup(t *testing.T) *mfixture {
@@ -49,6 +51,11 @@ func (fx *mfixture) migrate() ([]string, error) {
 	up := func(s site.Site) error {
 		fx.upSites = append(fx.upSites, s)
 		fx.upSawMD = site.HasMDConfig(fx.root)
+		if !fx.noCompose {
+			cf := stack.ComposeFile(fx.home, s.Name)
+			os.MkdirAll(filepath.Dir(cf), 0o755)
+			os.WriteFile(cf, []byte("x"), 0o644)
+		}
 		return fx.upErr
 	}
 	err := Migrate(fx.root, fx.f, fx.home, fx.ports, up)
@@ -292,5 +299,89 @@ func TestMigrateRollbackKeepsPreexistingMDDir(t *testing.T) {
 	fx.migrate()
 	if site.HasMDConfig(fx.root) || !exists(filepath.Join(fx.root, ".md")) {
 		t.Fatal("md dir should stay, config removed")
+	}
+}
+
+func TestMigrateRollbackDisconnectsBeforeDown(t *testing.T) {
+	fx := msetup(t)
+	fx.upErr = os.ErrPermission
+	cs, _ := fx.migrate()
+	down := idx(cs, "docker compose -p md-mig -f "+filepath.Join(fx.home, "sites", "mig", "compose.yaml")+" down")
+	for _, c := range []string{"md-router", "md-xhgui", "md-opensearch-latest"} {
+		i := idx(cs, "docker network disconnect md-mig_default "+c)
+		if i < 0 || down < 0 || i > down {
+			t.Fatalf("%s at %d down %d\n%v", c, i, down, cs)
+		}
+	}
+}
+
+func TestMigrateRollbackSkipsDownWithoutCompose(t *testing.T) {
+	fx := msetup(t)
+	fx.upErr = os.ErrPermission
+	fx.noCompose = true
+	cs, err := fx.migrate()
+	if err == nil || idx(cs, " down") >= 0 || idx(cs, "network disconnect") >= 0 {
+		t.Fatalf("err %v calls %v", err, cs)
+	}
+}
+
+func TestMigrateBacksUpEnvPhpBeforeUp(t *testing.T) {
+	fx := msetup(t)
+	env := filepath.Join(fx.root, "app", "etc", "env.php")
+	os.MkdirAll(filepath.Dir(env), 0o755)
+	os.WriteFile(env, []byte("orig"), 0o644)
+	var seen string
+	bak := filepath.Join(fx.home, "sites", "mig", "env.php.pre-migrate")
+	up := func(s site.Site) error {
+		d, _ := os.ReadFile(bak)
+		seen = string(d)
+		os.WriteFile(env, []byte("changed"), 0o644)
+		return nil
+	}
+	if err := Migrate(fx.root, fx.f, fx.home, fx.ports, up); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(bak)
+	if seen != "orig" || err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("seen %q err %v", seen, err)
+	}
+}
+
+func TestMigrateRollbackPrintsEnvPhpHintNoAutoRestore(t *testing.T) {
+	fx := msetup(t)
+	env := filepath.Join(fx.root, "app", "etc", "env.php")
+	os.MkdirAll(filepath.Dir(env), 0o755)
+	os.WriteFile(env, []byte("orig"), 0o644)
+	bak := filepath.Join(fx.home, "sites", "mig", "env.php.pre-migrate")
+	fx.f.Err[mWeb+"php bin/magento indexer:reindex catalogsearch_fulltext"] = os.ErrPermission
+	rd, wr, _ := os.Pipe()
+	old := os.Stderr
+	os.Stderr = wr
+	up := func(s site.Site) error { os.WriteFile(env, []byte("changed"), 0o644); return nil }
+	err := Migrate(fx.root, fx.f, fx.home, fx.ports, up)
+	os.Stderr = old
+	wr.Close()
+	out, _ := io.ReadAll(rd)
+	want := "env.php đã bị md sửa (index prefix/base_url). Bản gốc: " + bak + ". Khôi phục: cp " + bak + " " + env
+	if err == nil || !strings.Contains(string(out), want) {
+		t.Fatalf("err %v out %q", err, out)
+	}
+	if d, _ := os.ReadFile(env); string(d) != "changed" {
+		t.Fatal("env.php auto-restored")
+	}
+}
+
+func TestMigrateNoEnvPhpNoBackupNoHint(t *testing.T) {
+	fx := msetup(t)
+	fx.upErr = os.ErrPermission
+	rd, wr, _ := os.Pipe()
+	old := os.Stderr
+	os.Stderr = wr
+	fx.migrate()
+	os.Stderr = old
+	wr.Close()
+	out, _ := io.ReadAll(rd)
+	if strings.Contains(string(out), "env.php") || exists(filepath.Join(fx.home, "sites", "mig", "env.php.pre-migrate")) {
+		t.Fatalf("%q", out)
 	}
 }
