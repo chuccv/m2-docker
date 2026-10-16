@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"strings"
@@ -326,5 +327,15 @@ func TestUpComposeFailureLeavesStateUntouched(t *testing.T) {
 	st, _ := os.ReadFile(filepath.Join(home, "state.json"))
 	if strings.Contains(string(st), "ee249-qa") {
 		t.Fatalf("state has site: %s", st)
+	}
+}
+
+func TestInstallCmdRegistered(t *testing.T) {
+	e, _, _ := testEnv(t, false)
+	root := &cobra.Command{Use: "md"}
+	register(root, e)
+	c, _, err := root.Find([]string{"install"})
+	if err != nil || c.Name() != "install" || c.Flags().Lookup("sample-data") == nil || c.Flags().Lookup("admin-password").DefValue != "admin123" {
+		t.Fatalf("install cmd: %v", err)
 	}
 }

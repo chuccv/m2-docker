@@ -1,6 +1,8 @@
 package compose
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/chuccv/m2-docker/internal/site"
@@ -18,6 +20,22 @@ func hasAddon(s site.Site, name string) bool {
 		}
 	}
 	return false
+}
+
+func ComposerAuth() string {
+	var candidates []string
+	if h := os.Getenv("COMPOSER_HOME"); h != "" {
+		candidates = append(candidates, filepath.Join(h, "auth.json"))
+	}
+	if h, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates, filepath.Join(h, ".composer", "auth.json"), filepath.Join(h, ".config", "composer", "auth.json"))
+	}
+	for _, c := range candidates {
+		if st, err := os.Stat(c); err == nil && !st.IsDir() {
+			return c
+		}
+	}
+	return ""
 }
 
 func RenderSite(s site.Site, p Paths) ([]byte, error) {
@@ -54,6 +72,12 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 			nodeVol: {External: true},
 			dbVol:   {External: true},
 		},
+	}
+	if p.ComposerAuth != "" {
+		web := f.Services["web"]
+		web.Volumes = append(web.Volumes, p.ComposerAuth+":/home/www/.composer/auth.json:ro")
+		web.Environment = []string{"COMPOSER_HOME=/home/www/.composer", "COMPOSER_CACHE_DIR=/tmp/composer-cache"}
+		f.Services["web"] = web
 	}
 	if hasAddon(s, "redis") {
 		redisVol := "ddev-" + s.Name + "_redis"

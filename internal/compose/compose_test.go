@@ -129,3 +129,19 @@ func TestRenderSharedBindAllInterfaces(t *testing.T) {
 		t.Fatalf("missing all-interface port:\n%s", out)
 	}
 }
+
+func TestRenderSiteComposerAuth(t *testing.T) {
+	p := paths
+	p.ComposerAuth = "/h/.composer/auth.json"
+	out, err := RenderSite(loadSite(t, "ee249-qa"), p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "/h/.composer/auth.json:/home/www/.composer/auth.json:ro") || !strings.Contains(string(out), "COMPOSER_HOME=/home/www/.composer") {
+		t.Fatalf("missing auth mount:\n%s", out)
+	}
+	plain, _ := RenderSite(loadSite(t, "ee249-qa"), paths)
+	if strings.Contains(string(plain), "auth.json") {
+		t.Fatal("auth mounted without file")
+	}
+}

@@ -7,8 +7,9 @@ import (
 )
 
 type Paths struct {
-	Home string
-	Root string
+	Home         string
+	Root         string
+	ComposerAuth string
 }
 
 type file struct {

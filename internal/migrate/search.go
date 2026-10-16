@@ -15,7 +15,7 @@ func Prefix(name string) string {
 }
 
 func EnsureSearchMigrated(home string, s site.Site, r run.Runner) error {
-	marker := filepath.Join(home, "sites", s.Name, ".md-migrated")
+	marker := markerPath(home, s.Name)
 	if _, err := os.Stat(marker); err == nil {
 		return nil
 	}
@@ -33,6 +33,15 @@ func EnsureSearchMigrated(home string, s site.Site, r run.Runner) error {
 			return fmt.Errorf("search migration step %s: %w", st.label, err)
 		}
 	}
+	return WriteMarker(home, s.Name)
+}
+
+func markerPath(home, name string) string {
+	return filepath.Join(home, "sites", name, ".md-migrated")
+}
+
+func WriteMarker(home, name string) error {
+	marker := markerPath(home, name)
 	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
 		return err
 	}
