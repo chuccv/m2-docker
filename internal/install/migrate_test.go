@@ -374,3 +374,20 @@ func TestMigrateNoEnvPhpNoBackupNoHint(t *testing.T) {
 		t.Fatalf("%q", out)
 	}
 }
+
+func TestMigrateKeepsExistingPristineBackup(t *testing.T) {
+	fx := msetup(t)
+	env := filepath.Join(fx.root, "app", "etc", "env.php")
+	os.MkdirAll(filepath.Dir(env), 0o755)
+	os.WriteFile(env, []byte("modified"), 0o644)
+	bak := filepath.Join(fx.home, "sites", "mig", "env.php.pre-migrate")
+	os.MkdirAll(filepath.Dir(bak), 0o755)
+	os.WriteFile(bak, []byte("pristine"), 0o600)
+	if _, err := fx.migrate(); err != nil {
+		t.Fatal(err)
+	}
+	d, _ := os.ReadFile(bak)
+	if string(d) != "pristine" {
+		t.Fatalf("backup overwritten: %q", d)
+	}
+}

@@ -110,8 +110,10 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 		if err := os.MkdirAll(filepath.Dir(backup), 0o755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(backup, data, 0o600); err != nil {
-			return err
+		if !exists(backup) {
+			if err := os.WriteFile(backup, data, 0o600); err != nil {
+				return err
+			}
 		}
 		backedUp = true
 	}

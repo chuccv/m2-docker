@@ -167,3 +167,16 @@ func TestLoadWebsitesLowercasesHost(t *testing.T) {
 		t.Fatalf("%v %+v", err, s)
 	}
 }
+
+func TestLoadHostnamesValidatedLowercasedDeduped(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "name: shop\nhostnames:\n  - Extra.DDEV.site\n  - extra.ddev.site\n  - shop.ddev.site\n")
+	s, err := Load(dir)
+	if err != nil || strings.Join(s.Hostnames, ",") != "shop.ddev.site,extra.ddev.site" {
+		t.Fatalf("%v %v", err, s.Hostnames)
+	}
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "name: shop\nhostnames:\n  - \"a;b.ddev.site\"\n")
+	if _, err := Load(dir); err == nil || !strings.Contains(err.Error(), "hostnames[0]") {
+		t.Fatalf("err %v", err)
+	}
+}

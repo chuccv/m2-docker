@@ -83,7 +83,11 @@ func loadMD(root string) (Site, error) {
 		c.Node = "22"
 	}
 	hostnames := []string{c.Name + ".ddev.site"}
-	for _, h := range c.Hostnames {
+	for i, h := range c.Hostnames {
+		h = strings.ToLower(h)
+		if !hostRe.MatchString(h) {
+			return Site{}, fmt.Errorf("%s: hostnames[%d] invalid host %q", mdConfigPath(root), i, c.Hostnames[i])
+		}
 		hostnames = appendUnique(hostnames, h)
 	}
 	seen := map[string]int{}
