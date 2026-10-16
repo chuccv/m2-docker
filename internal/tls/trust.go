@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"m2-docker/internal/run"
+	"github.com/chuccv/m2-docker/internal/run"
 )
 
 const remoteCA = "/tmp/md-rootCA.pem"

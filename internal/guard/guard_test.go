@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"m2-docker/internal/config"
-	"m2-docker/internal/run"
-	"m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/config"
+	"github.com/chuccv/m2-docker/internal/run"
+	"github.com/chuccv/m2-docker/internal/site"
 )
 
 var (

@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"m2-docker/internal/cmd"
+	"github.com/chuccv/m2-docker/internal/cmd"
 )
 
 const version = "dev"

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"m2-docker/internal/run"
+	"github.com/chuccv/m2-docker/internal/run"
 )
 
 const siteCfg = "name: ee249-qa\ntype: magento2\nphp_version: \"8.5\"\nnodejs_version: \"22.11.0\"\nadditional_hostnames:\n  - shop\ndatabase:\n  type: mariadb\n  version: \"11.4\"\n"

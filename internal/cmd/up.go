@@ -12,14 +12,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"m2-docker/images"
-	"m2-docker/internal/compose"
-	"m2-docker/internal/config"
-	"m2-docker/internal/guard"
-	"m2-docker/internal/migrate"
-	"m2-docker/internal/router"
-	"m2-docker/internal/site"
-	"m2-docker/internal/tls"
+	"github.com/chuccv/m2-docker/images"
+	"github.com/chuccv/m2-docker/internal/compose"
+	"github.com/chuccv/m2-docker/internal/config"
+	"github.com/chuccv/m2-docker/internal/guard"
+	"github.com/chuccv/m2-docker/internal/migrate"
+	"github.com/chuccv/m2-docker/internal/router"
+	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/tls"
 )
 
 func imageHash() (string, error) {

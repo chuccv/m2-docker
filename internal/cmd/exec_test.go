@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"m2-docker/internal/run"
+	"github.com/chuccv/m2-docker/internal/run"
 )
 
 func testEnv(t *testing.T, tty bool) (*env, *run.FakeRunner, string) {

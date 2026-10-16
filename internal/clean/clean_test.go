@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"m2-docker/internal/run"
-	"m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/run"
+	"github.com/chuccv/m2-docker/internal/site"
 )
 
 func fake() *run.FakeRunner {

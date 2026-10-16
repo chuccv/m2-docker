@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"m2-docker/internal/run"
-	"m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/run"
+	"github.com/chuccv/m2-docker/internal/site"
 )
 
 const dumpKey = "docker exec ddev-ee249-qa-db mariadb-dump --single-transaction --routines --triggers -udb -pdb db"

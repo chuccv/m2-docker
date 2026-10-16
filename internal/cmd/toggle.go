@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"m2-docker/internal/config"
+	"github.com/chuccv/m2-docker/internal/config"
 )
 
 const confDir = "/usr/local/etc/php/conf.d"

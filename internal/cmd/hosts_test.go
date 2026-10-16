@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/site"
 )
 
 func TestHostsLines(t *testing.T) {

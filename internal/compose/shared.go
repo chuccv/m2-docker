@@ -3,7 +3,7 @@ package compose
 import (
 	"fmt"
 
-	"m2-docker/internal/config"
+	"github.com/chuccv/m2-docker/internal/config"
 )
 
 const XHGuiConfig = `<?php

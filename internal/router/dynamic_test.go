@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"m2-docker/internal/config"
-	"m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/config"
+	"github.com/chuccv/m2-docker/internal/site"
 )
 
 var update = flag.Bool("update", false, "update golden files")

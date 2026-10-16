@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"m2-docker/internal/config"
+	"github.com/chuccv/m2-docker/internal/config"
 )
 
 func newDescribeCmd(e *env) *cobra.Command {

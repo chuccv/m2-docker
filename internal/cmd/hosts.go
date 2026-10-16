@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/site"
 )
 
 func hostsLines(sites []site.Site, lookup func(string) ([]string, error)) []string {

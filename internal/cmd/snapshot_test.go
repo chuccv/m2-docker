@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"m2-docker/internal/run"
+	"github.com/chuccv/m2-docker/internal/run"
 )
 
 func writeSnapshot(t *testing.T, e *env, f *run.FakeRunner, root string) string {

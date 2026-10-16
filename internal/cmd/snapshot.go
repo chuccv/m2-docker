@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"m2-docker/internal/clean"
-	"m2-docker/internal/site"
-	"m2-docker/internal/snapshot"
+	"github.com/chuccv/m2-docker/internal/clean"
+	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/snapshot"
 )
 
 var errAborted = errors.New("aborted")

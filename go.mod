@@ -1,4 +1,4 @@
-module m2-docker
+module github.com/chuccv/m2-docker
 
 go 1.24.13
 
