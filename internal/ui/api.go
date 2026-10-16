@@ -222,8 +222,10 @@ func volumeSite(name string) string {
 	if strings.HasPrefix(name, "md-") {
 		return ""
 	}
-	if i := strings.Index(name, "-mariadb"); i > 0 {
-		return name[:i]
+	for _, suffix := range []string{"-mariadb", "-mysql"} {
+		if i := strings.Index(name, suffix); i > 0 {
+			return name[:i]
+		}
 	}
 	return ""
 }

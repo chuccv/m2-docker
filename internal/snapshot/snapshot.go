@@ -33,7 +33,7 @@ func Create(home string, s site.Site, r run.Runner, label string) (string, error
 	}
 	defer os.Remove(tmp.Name())
 	zw := gzip.NewWriter(tmp)
-	err = r.Pipe(nil, zw, "docker", "exec", "ddev-"+s.Name+"-db", "mariadb-dump", "--single-transaction", "--routines", "--triggers", "-udb", "-pdb", "db")
+	err = r.Pipe(nil, zw, "docker", "exec", "ddev-"+s.Name+"-db", s.DBDump(), "--single-transaction", "--routines", "--triggers", "-udb", "-pdb", "db")
 	if err == nil {
 		err = zw.Close()
 	}
@@ -65,10 +65,10 @@ func Restore(home string, s site.Site, r run.Runner, path string) error {
 		return fmt.Errorf("pre-restore snapshot failed, nothing dropped: %w", err)
 	}
 	db := "ddev-" + s.Name + "-db"
-	if _, err := r.Run("docker", "exec", "-i", db, "mariadb", "-udb", "-pdb", "-e", "DROP DATABASE IF EXISTS db; CREATE DATABASE db"); err != nil {
+	if _, err := r.Run("docker", "exec", "-i", db, s.DBClient(), "-udb", "-pdb", "-e", "DROP DATABASE IF EXISTS db; CREATE DATABASE db"); err != nil {
 		return fmt.Errorf("recreate database (pre-restore snapshot: %s): %w", pre, err)
 	}
-	if err := r.Pipe(zr, io.Discard, "docker", "exec", "-i", db, "mariadb", "-udb", "-pdb", "db"); err != nil {
+	if err := r.Pipe(zr, io.Discard, "docker", "exec", "-i", db, s.DBClient(), "-udb", "-pdb", "db"); err != nil {
 		return fmt.Errorf("import snapshot (pre-restore snapshot: %s): %w", pre, err)
 	}
 	return nil

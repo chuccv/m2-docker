@@ -32,6 +32,41 @@ func SearchAlias(key string) string {
 	return "opensearch"
 }
 
+func (s Site) isMySQL() bool { return s.DBType == "mysql" }
+
+func (s Site) DBVolume() string {
+	if s.isMySQL() {
+		return s.Name + "-mysql"
+	}
+	return s.Name + "-mariadb"
+}
+
+func (s Site) DBClient() string {
+	if s.isMySQL() {
+		return "mysql"
+	}
+	return "mariadb"
+}
+
+func (s Site) DBDump() string {
+	if s.isMySQL() {
+		return "mysqldump"
+	}
+	return "mariadb-dump"
+}
+
+func (s Site) DBVersionFile() string {
+	return "db_" + s.DBClient() + "_version.txt"
+}
+
+func (s Site) DBLabel() string {
+	return s.DBClient() + "_" + s.DBVersion
+}
+
+func (s Site) DBImage() string {
+	return s.DBClient() + ":" + s.DBVersion
+}
+
 func Supported(s Site) error {
 	var errs []error
 	if s.Name == "shared" {
@@ -40,8 +75,8 @@ func Supported(s Site) error {
 	if s.Type != "magento2" {
 		errs = append(errs, fmt.Errorf("project type %q is not supported, only magento2", s.Type))
 	}
-	if s.DBType != "mariadb" {
-		errs = append(errs, fmt.Errorf("database %q: mysql chưa hỗ trợ ở V1, only mariadb", s.DBType))
+	if s.DBType != "mariadb" && s.DBType != "mysql" {
+		errs = append(errs, fmt.Errorf("database %q is not supported, only mariadb or mysql", s.DBType))
 	}
 	if strings.HasPrefix(s.Webserver, "apache") {
 		errs = append(errs, fmt.Errorf("webserver %q (apache) is not supported, only nginx-fpm", s.Webserver))

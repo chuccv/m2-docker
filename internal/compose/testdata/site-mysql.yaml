@@ -1,0 +1,44 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: ddev-ee249-qa-db
+    restart: unless-stopped
+    user: 1000:1000
+    environment:
+      - MYSQL_USER=db
+      - MYSQL_PASSWORD=db
+      - MYSQL_DATABASE=db
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - ee249-qa-mysql:/var/lib/mysql
+    labels:
+      com.md.managed: "true"
+  redis:
+    image: redis:7
+    container_name: ddev-ee249-qa-redis
+    restart: unless-stopped
+    volumes:
+      - ddev-ee249-qa_redis:/data
+    labels:
+      com.md.managed: "true"
+  web:
+    image: md/php:8.5
+    container_name: ddev-ee249-qa-web
+    restart: unless-stopped
+    user: 1000:1000
+    volumes:
+      - /var/www/html/ee249-qa:/var/www/html
+      - md-node-24:/opt/node:ro
+      - /home/user/.md/ca/rootCA.pem:/usr/local/share/ca-certificates/md.crt:ro
+      - /home/user/.md/sites/ee249-qa/nginx-run.conf:/etc/nginx/md-run.conf:ro
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    labels:
+      com.md.managed: "true"
+volumes:
+  ddev-ee249-qa_redis:
+    external: true
+  ee249-qa-mysql:
+    external: true
+  md-node-24:
+    external: true

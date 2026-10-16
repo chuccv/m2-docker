@@ -38,10 +38,27 @@ func ComposerAuth() string {
 	return ""
 }
 
+func dbService(s site.Site, vol string, labels map[string]string) service {
+	svc := service{
+		Image:         s.DBImage(),
+		ContainerName: "ddev-" + s.Name + "-db",
+		Restart:       "unless-stopped",
+		User:          "1000:1000",
+		Volumes:       []string{vol + ":/var/lib/mysql"},
+		Labels:        labels,
+	}
+	if s.DBType == "mysql" {
+		svc.Environment = []string{"MYSQL_USER=db", "MYSQL_PASSWORD=db", "MYSQL_DATABASE=db", "MYSQL_ROOT_PASSWORD=root"}
+	} else {
+		svc.Environment = []string{"MARIADB_USER=db", "MARIADB_PASSWORD=db", "MARIADB_DATABASE=db"}
+	}
+	return svc
+}
+
 func RenderSite(s site.Site, p Paths) ([]byte, error) {
 	managed := map[string]string{"com.md.managed": "true"}
 	nodeVol := "md-node-" + nodeMajor(s.NodeVersion)
-	dbVol := s.Name + "-mariadb"
+	dbVol := s.DBVolume()
 
 	f := file{
 		Services: map[string]service{
@@ -59,15 +76,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 				ExtraHosts: []string{"host.docker.internal:host-gateway"},
 				Labels:     managed,
 			},
-			"db": {
-				Image:         "mariadb:" + s.DBVersion,
-				ContainerName: "ddev-" + s.Name + "-db",
-				Restart:       "unless-stopped",
-				User:          "1000:1000",
-				Environment:   []string{"MARIADB_USER=db", "MARIADB_PASSWORD=db", "MARIADB_DATABASE=db"},
-				Volumes:       []string{dbVol + ":/var/lib/mysql"},
-				Labels:        managed,
-			},
+			"db": dbService(s, dbVol, managed),
 		},
 		Volumes: map[string]volume{
 			nodeVol: {External: true},

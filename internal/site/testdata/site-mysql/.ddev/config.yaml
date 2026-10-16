@@ -1,0 +1,8 @@
+name: site-mysql
+type: magento2
+docroot: pub
+php_version: "8.3"
+webserver_type: nginx-fpm
+database:
+    type: mysql
+    version: "8.0"

@@ -42,31 +42,36 @@ func CheckNoDDEV(r run.Runner, s site.Site, ports config.Ports) error {
 }
 
 func CheckDBVersion(r run.Runner, s site.Site) error {
-	if _, err := r.Run("docker", "volume", "inspect", s.Name+"-mariadb"); err != nil {
-		return fmt.Errorf("DB volume %s-mariadb not found", s.Name)
+	vol := s.DBVolume()
+	if _, err := r.Run("docker", "volume", "inspect", vol); err != nil {
+		return fmt.Errorf("DB volume %s not found", vol)
 	}
 	want := versionRe.FindString(s.DBVersion)
-	label, _ := r.Run("docker", "volume", "inspect", "-f", `{{index .Labels "com.md.db"}}`, s.Name+"-mariadb")
+	label, _ := r.Run("docker", "volume", "inspect", "-f", `{{index .Labels "com.md.db"}}`, vol)
 	if v := versionRe.FindString(label); v != "" {
 		if v != want {
-			return fmt.Errorf("DB volume %s-mariadb is %s but config wants %s", s.Name, v, s.DBVersion)
+			return fmt.Errorf("DB volume %s is %s but config wants %s", vol, v, s.DBVersion)
 		}
 		return nil
 	}
+	files := []string{s.DBVersionFile()}
+	if s.DBType != "mysql" {
+		files = append(files, "mysql_upgrade_info")
+	}
 	found := ""
-	for _, file := range []string{"db_mariadb_version.txt", "mysql_upgrade_info"} {
+	for _, file := range files {
 		out, _ := r.Run("docker", "run", "--rm", "-u", "1000:1000", "--entrypoint", "cat",
-			"-v", s.Name+"-mariadb:/v:ro", "mariadb:"+s.DBVersion, "/v/"+file)
+			"-v", vol+":/v:ro", s.DBImage(), "/v/"+file)
 		if v := versionRe.FindString(out); v != "" {
 			found = v
 			break
 		}
 	}
 	if found == "" {
-		return fmt.Errorf("DB version in volume %s-mariadb cannot be determined", s.Name)
+		return fmt.Errorf("DB version in volume %s cannot be determined", vol)
 	}
 	if found != want {
-		return fmt.Errorf("DB volume %s-mariadb is %s but config wants %s", s.Name, found, s.DBVersion)
+		return fmt.Errorf("DB volume %s is %s but config wants %s", vol, found, s.DBVersion)
 	}
 	return nil
 }

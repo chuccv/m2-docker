@@ -141,10 +141,27 @@ func TestSupportedAllowsMutagen(t *testing.T) {
 	}
 }
 
-func TestSupportedRejectsMySQL(t *testing.T) {
-	err := Supported(Site{Type: "magento2", Webserver: "nginx-fpm", DBType: "mysql", DBVersion: "8.0"})
-	if err == nil || !strings.Contains(err.Error(), "mysql") {
+func TestSupportedMySQLAndUnknownDB(t *testing.T) {
+	if err := Supported(Site{Type: "magento2", Webserver: "nginx-fpm", DBType: "mysql", DBVersion: "8.0"}); err != nil {
+		t.Fatal(err)
+	}
+	err := Supported(Site{Type: "magento2", Webserver: "nginx-fpm", DBType: "postgres"})
+	if err == nil || !strings.Contains(err.Error(), "postgres") {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestDBHelpers(t *testing.T) {
+	my := load(t, "site-mysql")
+	if my.DBType != "mysql" || my.DBVolume() != "site-mysql-mysql" || my.DBClient() != "mysql" || my.DBDump() != "mysqldump" || my.DBVersionFile() != "db_mysql_version.txt" || my.DBLabel() != "mysql_8.0" {
+		t.Fatalf("%+v", my)
+	}
+	ma := load(t, "ee249-qa")
+	if ma.DBVolume() != "ee249-qa-mariadb" || ma.DBClient() != "mariadb" || ma.DBDump() != "mariadb-dump" || ma.DBVersionFile() != "db_mariadb_version.txt" || ma.DBLabel() != "mariadb_10.6" {
+		t.Fatalf("%+v", ma)
+	}
+	if (Site{Name: "x"}).DBClient() != "mariadb" {
+		t.Fatal("empty type must default to mariadb")
 	}
 }
 

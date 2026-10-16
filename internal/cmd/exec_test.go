@@ -187,3 +187,13 @@ func TestToggleRejectsBadArg(t *testing.T) {
 		t.Fatal("want error")
 	}
 }
+
+func TestMysqlClientByDBType(t *testing.T) {
+	e, f, root := testEnv(t, false)
+	cfg := "name: ee249-qa\ntype: magento2\nphp_version: \"8.5\"\ndatabase:\n  type: mysql\n  version: \"8.0\"\n"
+	os.WriteFile(filepath.Join(root, "ee249-qa", ".ddev", "config.yaml"), []byte(cfg), 0o644)
+	if err := exec(t, e, "mysql"); err != nil {
+		t.Fatal(err)
+	}
+	want(t, f, "docker", "exec", "-i", "ddev-ee249-qa-db", "mysql", "-udb", "-pdb", "db")
+}

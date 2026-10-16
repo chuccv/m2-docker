@@ -202,3 +202,13 @@ func TestSharedHasPhpMyAdminEntrypoints(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderSiteMySQL(t *testing.T) {
+	s := loadSite(t, "ee249-qa")
+	s.DBType, s.DBVersion = "mysql", "8.0"
+	out, err := RenderSite(s, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "site-mysql.yaml", out)
+}
