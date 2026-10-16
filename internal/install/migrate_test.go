@@ -1,11 +1,13 @@
 package install
 
 import (
+	"errors"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -439,5 +441,54 @@ func TestFromDDEVPhpMyAdmin(t *testing.T) {
 	s, _ := site.Load(fx.root)
 	if c := FromDDEV(s); !c.PhpMyAdmin {
 		t.Fatalf("%+v", c)
+	}
+}
+
+const mDump = "docker exec ddev-mig-db mariadb-dump --single-transaction --routines --triggers -udb -pdb db"
+
+func TestMigrateTakesPreMigrateSnapshot(t *testing.T) {
+	fx := msetup(t)
+	fx.f.Out[mDump] = "-- dump"
+	cs, err := fx.migrate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(cs, mDump) {
+		t.Fatalf("no dump: %v", cs)
+	}
+	if _, err := os.Stat(filepath.Join(fx.home, "sites", "mig", "snapshots", "mig-pre-migrate.sql.gz")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMigrateKeepsExistingPreMigrateSnapshot(t *testing.T) {
+	fx := msetup(t)
+	snap := filepath.Join(fx.home, "sites", "mig", "snapshots", "mig-pre-migrate.sql.gz")
+	os.MkdirAll(filepath.Dir(snap), 0o755)
+	os.WriteFile(snap, []byte("pristine"), 0o600)
+	cs, err := fx.migrate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(cs, mDump) {
+		t.Fatal("dumped again")
+	}
+	if d, _ := os.ReadFile(snap); string(d) != "pristine" {
+		t.Fatalf("overwritten: %q", d)
+	}
+}
+
+func TestMigrateSnapshotFailureRollsBack(t *testing.T) {
+	fx := msetup(t)
+	fx.f.Err[mDump] = errors.New("dump failed")
+	cs, err := fx.migrate()
+	if err == nil || !strings.Contains(err.Error(), "dump failed") {
+		t.Fatalf("err %v", err)
+	}
+	if site.HasMDConfig(fx.root) {
+		t.Fatal(".md/config.yaml left behind")
+	}
+	if !slices.ContainsFunc(cs, func(c string) bool { return strings.Contains(c, " down") }) {
+		t.Fatalf("no compose down: %v", cs)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/migrate"
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/snapshot"
 	"github.com/chuccv/m2-docker/internal/stack"
 )
 
@@ -127,6 +128,11 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	upRan = true
 	if err := up(s); err != nil {
 		return err
+	}
+	if !exists(filepath.Join(home, "sites", s.Name, "snapshots", s.Name+"-pre-migrate.sql.gz")) {
+		if _, err := snapshot.Create(home, s, r, "pre-migrate"); err != nil {
+			return err
+		}
 	}
 	if s.SearchVersion != "" {
 		if err := migrate.EnsureSearchMigrated(home, s, r); err != nil {
