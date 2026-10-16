@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -33,6 +34,11 @@ type MDConfig struct {
 		Edition string `yaml:"edition"`
 	} `yaml:"magento"`
 }
+
+var (
+	hostRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$`)
+	codeRe = regexp.MustCompile(`^[a-z0-9_]+$`)
+)
 
 func NormalizeName(folder string) string {
 	return strings.ReplaceAll(strings.ToLower(folder), "_", "-")
@@ -80,10 +86,24 @@ func loadMD(root string) (Site, error) {
 	for _, h := range c.Hostnames {
 		hostnames = appendUnique(hostnames, h)
 	}
+	seen := map[string]int{}
 	for i, w := range c.Websites {
 		if w.Host == "" || w.Code == "" {
 			return Site{}, fmt.Errorf("%s: websites[%d] needs host and code", mdConfigPath(root), i)
 		}
+		host := strings.ToLower(w.Host)
+		if !hostRe.MatchString(host) {
+			return Site{}, fmt.Errorf("%s: websites[%d] invalid host %q", mdConfigPath(root), i, w.Host)
+		}
+		if !codeRe.MatchString(w.Code) {
+			return Site{}, fmt.Errorf("%s: websites[%d] invalid code %q (use a-z, 0-9, _)", mdConfigPath(root), i, w.Code)
+		}
+		if j, dup := seen[host]; dup {
+			return Site{}, fmt.Errorf("%s: websites[%d] duplicate host %q (same as websites[%d])", mdConfigPath(root), i, w.Host, j)
+		}
+		seen[host] = i
+		c.Websites[i].Host = host
+		w.Host = host
 		if w.Type == "" {
 			c.Websites[i].Type = "website"
 		} else if w.Type != "website" && w.Type != "store" {

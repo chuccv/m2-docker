@@ -126,3 +126,44 @@ func TestLoadWebsitesInvalidType(t *testing.T) {
 		t.Fatalf("err %v", err)
 	}
 }
+
+func loadWebsites(t *testing.T, entries string) (Site, error) {
+	t.Helper()
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "name: a\nwebsites:\n"+entries)
+	return Load(dir)
+}
+
+func TestLoadWebsitesValidation(t *testing.T) {
+	bad := map[string]string{
+		"semicolon host": "  - host: a;b.ddev.site\n    code: x\n",
+		"space host":     "  - host: \"a b.ddev.site\"\n    code: x\n",
+		"no dot host":    "  - host: localhost\n    code: x\n",
+		"leading dash":   "  - host: -a.ddev.site\n    code: x\n",
+		"quote host":     "  - host: 'a\"b.ddev.site'\n    code: x\n",
+		"bad code":       "  - host: a.ddev.site\n    code: \"x;y\"\n",
+		"upper code":     "  - host: a.ddev.site\n    code: Main\n",
+		"dash code":      "  - host: a.ddev.site\n    code: a-b\n",
+		"duplicate":      "  - host: a.ddev.site\n    code: x\n  - host: A.ddev.site\n    code: y\n",
+	}
+	for name, e := range bad {
+		_, err := loadWebsites(t, e)
+		if err == nil || !strings.Contains(err.Error(), "websites[") {
+			t.Errorf("%s: err %v", name, err)
+		}
+	}
+}
+
+func TestLoadWebsitesNamesOffendingEntry(t *testing.T) {
+	_, err := loadWebsites(t, "  - host: ok.ddev.site\n    code: x\n  - host: a;b.ddev.site\n    code: y\n")
+	if err == nil || !strings.Contains(err.Error(), "websites[1]") || !strings.Contains(err.Error(), "a;b.ddev.site") {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestLoadWebsitesLowercasesHost(t *testing.T) {
+	s, err := loadWebsites(t, "  - host: Shop.DDEV.site\n    code: shop_2\n")
+	if err != nil || s.Websites[0].Host != "shop.ddev.site" || s.Hostnames[1] != "shop.ddev.site" {
+		t.Fatalf("%v %+v", err, s)
+	}
+}
