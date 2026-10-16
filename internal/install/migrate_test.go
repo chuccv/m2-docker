@@ -94,6 +94,16 @@ func TestFromDDEV(t *testing.T) {
 	}
 }
 
+func TestFromDDEVApache(t *testing.T) {
+	c := FromDDEV(site.Site{Name: "a", Webserver: "apache-fpm"})
+	if c.Webserver != "apache" {
+		t.Fatalf("%+v", c)
+	}
+	if c := FromDDEV(site.Site{Name: "a", Webserver: "nginx-fpm"}); c.Webserver != "" {
+		t.Fatalf("%+v", c)
+	}
+}
+
 func TestFromDDEVAdditionalHostnames(t *testing.T) {
 	fx := msetup(t)
 	s, _ := site.Load(fx.root)

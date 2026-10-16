@@ -227,8 +227,11 @@ func (e *env) up(s site.Site, home string) error {
 	if err := writeFile(file, body); err != nil {
 		return err
 	}
-	runConf := filepath.Join(filepath.Dir(file), "nginx-run.conf")
-	runBody := website.RenderNginxRun(s.Websites)
+	runName, runBody, reload := "nginx-run.conf", website.RenderNginxRun(s.Websites), []string{"nginx", "-s", "reload"}
+	if s.IsApache() {
+		runName, runBody, reload = "apache-run.conf", website.RenderApacheRun(s.Websites), []string{"apachectl", "-k", "graceful"}
+	}
+	runConf := filepath.Join(filepath.Dir(file), runName)
 	prev, perr := os.ReadFile(runConf)
 	runChanged := perr == nil && !bytes.Equal(prev, runBody)
 	if err := writeFile(runConf, runBody); err != nil {
@@ -241,8 +244,8 @@ func (e *env) up(s site.Site, home string) error {
 		return err
 	}
 	if runChanged {
-		if _, err := e.runner.Run("docker", "exec", "ddev-"+s.Name+"-web", "nginx", "-s", "reload"); err != nil {
-			fmt.Fprintf(e.writer(), "warning: nginx reload: %v\n", err)
+		if _, err := e.runner.Run("docker", append([]string{"exec", "ddev-" + s.Name + "-web"}, reload...)...); err != nil {
+			fmt.Fprintf(e.writer(), "warning: %s reload: %v\n", reload[0], err)
 		}
 	}
 	net := "md-" + s.Name + "_default"

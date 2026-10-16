@@ -10,7 +10,7 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/download/
 
 RUN chmod +x /usr/local/bin/install-php-extensions \
  && apt-get update \
- && apt-get install -y --no-install-recommends nginx tini mariadb-client git unzip ca-certificates curl util-linux procps \
+ && apt-get install -y --no-install-recommends nginx apache2 tini mariadb-client git unzip ca-certificates curl util-linux procps \
  && install-php-extensions @composer bcmath gd intl pdo_mysql soap sockets sodium xsl zip opcache redis xdebug xhprof \
  && rm -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xhprof.ini \
  && arch="$(dpkg --print-architecture)" \
@@ -26,11 +26,14 @@ RUN chmod +x /usr/local/bin/install-php-extensions \
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY md-run.conf /etc/nginx/md-run.conf
+COPY apache2.conf /etc/apache2/apache2.conf
 COPY pool.conf /usr/local/etc/php-fpm.d/www.conf
 COPY conf.d/ /usr/local/etc/php/conf.d/
 COPY prepend.php /usr/local/share/php-profiler/prepend.php
 COPY entrypoint.sh /usr/local/bin/md-entrypoint
-RUN rm -f /usr/local/etc/php-fpm.d/zz-docker.conf /usr/local/etc/php-fpm.d/docker.conf \
+RUN : > /etc/apache2/md-run.conf \
+ && printf "export APACHE_RUN_USER=www\\nexport APACHE_RUN_GROUP=www\\nexport APACHE_RUN_DIR=/tmp/apache2\\nexport APACHE_PID_FILE=/tmp/apache2.pid\\nexport APACHE_LOCK_DIR=/tmp\\nexport APACHE_LOG_DIR=/tmp\\nexport LANG=C\\n" > /etc/apache2/envvars \
+ && rm -f /usr/local/etc/php-fpm.d/zz-docker.conf /usr/local/etc/php-fpm.d/docker.conf \
  && chmod +x /usr/local/bin/md-entrypoint \
  && chown www:www /usr/local/etc/php/conf.d
 

@@ -93,6 +93,33 @@ func TestUpNoSyncForDDEVSite(t *testing.T) {
 	}
 }
 
+func TestUpApacheWritesRunConfAndGracefulReload(t *testing.T) {
+	e, f, home := upEnv(t)
+	root := filepath.Join(filepath.Dir(mustCwd(t, e)), "ee249-qa")
+	cfg := mdWebsitesCfg + "webserver: apache\n"
+	if err := os.WriteFile(filepath.Join(root, ".md", "config.yaml"), []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(home, "sites", "ee249-qa", "apache-run.conf")
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte("old"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(p)
+	if err != nil || !strings.Contains(string(data), "MAGE_RUN_CODE=b2b") {
+		t.Fatalf("got %s %v", data, err)
+	}
+	cs := calls(f)
+	if index(cs, "docker exec ddev-ee249-qa-web apachectl -k graceful") < 0 || index(cs, reloadCall) >= 0 {
+		t.Fatalf("calls:\n%s", strings.Join(cs, "\n"))
+	}
+}
+
 const reloadCall = "docker exec ddev-ee249-qa-web nginx -s reload"
 
 func TestUpReloadsNginxWhenRunConfChanged(t *testing.T) {

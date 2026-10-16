@@ -95,6 +95,33 @@ func TestWriteMDConfigRoundTrip(t *testing.T) {
 	}
 }
 
+func TestMDConfigWebserver(t *testing.T) {
+	for _, c := range []struct{ in, want string }{{"", "nginx-fpm"}, {"nginx", "nginx-fpm"}, {"apache", "apache-fpm"}} {
+		dir := t.TempDir()
+		cfg := MDConfig{Name: "w", PHP: "8.3", Webserver: c.in}
+		if err := WriteMDConfig(dir, cfg); err != nil {
+			t.Fatal(err)
+		}
+		s, err := Load(dir)
+		if err != nil || s.Webserver != c.want {
+			t.Fatalf("%q: %+v %v", c.in, s, err)
+		}
+	}
+	dir := t.TempDir()
+	if err := WriteMDConfig(dir, MDConfig{Name: "w", PHP: "8.3", Webserver: "caddy"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(dir); err == nil || !strings.Contains(err.Error(), "webserver") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestIsApache(t *testing.T) {
+	if !(Site{Webserver: "apache-fpm"}).IsApache() || (Site{Webserver: "nginx-fpm"}).IsApache() || (Site{}).IsApache() {
+		t.Fatal("IsApache")
+	}
+}
+
 func TestFindByCwdMDOnly(t *testing.T) {
 	root := t.TempDir()
 	dir := filepath.Join(root, "s1")

@@ -72,7 +72,7 @@ func TestLoadMissing(t *testing.T) {
 func TestSupported(t *testing.T) {
 	cases := []struct {
 		name, want string
-	}{{"site-apache", "apache"}, {"site-es", "elasticsearch"}}
+	}{{"site-es", "elasticsearch"}}
 	for _, c := range cases {
 		err := Supported(load(t, c.name))
 		if err == nil || !strings.Contains(err.Error(), c.want) {
@@ -87,6 +87,12 @@ func TestSupported(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), a) {
 			t.Fatalf("%s: %v", a, err)
 		}
+	}
+	if err := Supported(load(t, "site-apache")); err != nil {
+		t.Fatal(err)
+	}
+	if err := Supported(Site{Type: "magento2", Webserver: "generic", DBType: "mariadb"}); err == nil || !strings.Contains(err.Error(), "generic") {
+		t.Fatalf("generic: %v", err)
 	}
 	if err := Supported(Site{Type: "drupal10", Webserver: "nginx-fpm"}); err == nil {
 		t.Fatal("want type error")

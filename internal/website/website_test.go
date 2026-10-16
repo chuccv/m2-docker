@@ -40,6 +40,22 @@ func TestRenderNginxRunEmpty(t *testing.T) {
 	}
 }
 
+func TestRenderApacheRun(t *testing.T) {
+	got := string(RenderApacheRun(sample))
+	want := `SetEnvIfNoCase Host "^b2b[.]shop[.]ddev[.]site(:[0-9]+)?$" MAGE_RUN_CODE=b2b MAGE_RUN_TYPE=website
+SetEnvIfNoCase Host "^fr[.]shop[.]ddev[.]site(:[0-9]+)?$" MAGE_RUN_CODE=fr MAGE_RUN_TYPE=store
+`
+	if got != want {
+		t.Fatalf("got\n%s", got)
+	}
+}
+
+func TestRenderApacheRunEmpty(t *testing.T) {
+	if got := RenderApacheRun(nil); len(got) != 0 {
+		t.Fatalf("got %q", got)
+	}
+}
+
 func TestBaseURLs(t *testing.T) {
 	got := BaseURLs("shop.ddev.site", sample, 9443)
 	want := []Setting{

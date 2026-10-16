@@ -146,6 +146,22 @@ func TestRenderSiteComposerAuth(t *testing.T) {
 	}
 }
 
+func TestRenderSiteApache(t *testing.T) {
+	s := loadSite(t, "ee249-qa")
+	s.Webserver = "apache-fpm"
+	out, err := RenderSite(s, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "/home/user/.md/sites/ee249-qa/apache-run.conf:/etc/apache2/md-run.conf:ro") || !strings.Contains(string(out), "MD_WEBSERVER=apache") || strings.Contains(string(out), "nginx-run.conf") {
+		t.Fatalf("got %s", out)
+	}
+	plain, _ := RenderSite(loadSite(t, "ee249-qa"), paths)
+	if strings.Contains(string(plain), "MD_WEBSERVER") || strings.Contains(string(plain), "apache") {
+		t.Fatalf("nginx site: %s", plain)
+	}
+}
+
 func TestRenderSiteMountsNginxRun(t *testing.T) {
 	out, err := RenderSite(loadSite(t, "ee249-qa"), paths)
 	if err != nil {

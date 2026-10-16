@@ -24,6 +24,7 @@ type MDConfig struct {
 		Type    string `yaml:"type"`
 		Version string `yaml:"version"`
 	} `yaml:"database"`
+	Webserver string    `yaml:"webserver,omitempty"`
 	Search    string    `yaml:"search"`
 	Node      string    `yaml:"node"`
 	Redis     bool      `yaml:"redis"`
@@ -82,6 +83,14 @@ func loadMD(root string) (Site, error) {
 	if c.Node == "" {
 		c.Node = "22"
 	}
+	webserver := "nginx-fpm"
+	switch c.Webserver {
+	case "", "nginx":
+	case "apache":
+		webserver = "apache-fpm"
+	default:
+		return Site{}, fmt.Errorf("%s: webserver must be nginx or apache, got %q", mdConfigPath(root), c.Webserver)
+	}
 	hostnames := []string{c.Name + ".ddev.site"}
 	for _, h := range c.Hostnames {
 		hostnames = appendUnique(hostnames, h)
@@ -119,7 +128,7 @@ func loadMD(root string) (Site, error) {
 		DBType:        c.Database.Type,
 		DBVersion:     c.Database.Version,
 		NodeVersion:   c.Node,
-		Webserver:     "nginx-fpm",
+		Webserver:     webserver,
 		Hostnames:     hostnames,
 		Websites:      c.Websites,
 		SearchVersion: c.Search,

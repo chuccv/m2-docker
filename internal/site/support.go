@@ -3,7 +3,6 @@ package site
 import (
 	"errors"
 	"fmt"
-	"strings"
 )
 
 func Supported(s Site) error {
@@ -17,8 +16,8 @@ func Supported(s Site) error {
 	if s.DBType != "mariadb" {
 		errs = append(errs, fmt.Errorf("database %q: mysql chưa hỗ trợ ở V1, only mariadb", s.DBType))
 	}
-	if strings.HasPrefix(s.Webserver, "apache") {
-		errs = append(errs, fmt.Errorf("webserver %q (apache) is not supported, only nginx-fpm", s.Webserver))
+	if s.Webserver != "" && s.Webserver != "nginx-fpm" && s.Webserver != "apache-fpm" {
+		errs = append(errs, fmt.Errorf("webserver %q is not supported, only nginx-fpm or apache-fpm", s.Webserver))
 	}
 	for _, a := range []string{"elasticsearch", "varnish", "rabbitmq", "mutagen"} {
 		if contains(s.Addons, a) {
