@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -118,11 +119,15 @@ func TestSitesView(t *testing.T) {
 	if qa.Status != "running" || qa.Blocked != "" || qa.PHP != "8.5" {
 		t.Fatalf("qa: %+v", qa)
 	}
-	if !strings.Contains(views["site-apache"].Blocked, "apache") {
-		t.Fatalf("apache: %+v", views["site-apache"])
+	ap := views["site-apache"]
+	if ap.Blocked != "" || !strings.Contains(ap.Note, "apache") || ap.Engine != "" || ap.Source != "ddev" {
+		t.Fatalf("apache: %+v", ap)
+	}
+	if qa.Engine != "md" {
+		t.Fatalf("qa engine: %+v", qa)
 	}
 	b := views["busy"]
-	if b.Status != "ddev" || !strings.Contains(b.Blocked, "DDEV") {
+	if b.Status != "ddev" || b.Engine != "ddev" || b.Blocked != "" {
 		t.Fatalf("busy: %+v", b)
 	}
 }
@@ -220,5 +225,39 @@ func TestDisk(t *testing.T) {
 	r := do(h, "GET", "/api/disk", "", nil)
 	if r.Code != 200 || !strings.Contains(r.Body.String(), `"site":"pfsm248"`) || !strings.Contains(r.Body.String(), "md/php") {
 		t.Fatalf("%d %s", r.Code, r.Body)
+	}
+}
+
+func TestDdevActions(t *testing.T) {
+	root, home := t.TempDir(), t.TempDir()
+	cfg := "name: %s\ntype: magento2\nphp_version: \"8.3\"\nwebserver_type: apache-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"
+	writeSite(t, root, "dashboard", fmt.Sprintf(cfg, "dashboard"))
+	writeSite(t, root, "x", fmt.Sprintf(cfg, "x"))
+	writeSite(t, root, "mdsite", fmt.Sprintf(cfg, "mdsite"))
+	os.MkdirAll(filepath.Join(root, "mdsite", ".md"), 0o755)
+	os.WriteFile(filepath.Join(root, "mdsite", ".md", "config.yaml"), []byte("name: mdsite\nphp: \"8.3\"\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"), 0o644)
+	f := &run.FakeRunner{Out: map[string]string{"docker ps --format " + psFormat: "|ddev-dashboard\n"}}
+	fa := &fakeActions{}
+	h := newServer(home, f, fa, []string{root})
+	hdr := map[string]string{"X-MD": "1"}
+	for _, p := range []string{"/api/sites/dashboard/stop", "/api/sites/dashboard/restart", "/api/sites/x/up", "/api/sites/mdsite/up"} {
+		if r := do(h, "POST", p, "", hdr); r.Code != 200 {
+			t.Fatalf("%s: %d %s", p, r.Code, r.Body)
+		}
+	}
+	if r := do(h, "POST", "/api/sites/dashboard/up", "", hdr); r.Code == 200 {
+		t.Fatal("up on running ddev site accepted")
+	}
+	var ddev []string
+	for _, c := range f.Calls {
+		if c[0] == "ddev" {
+			ddev = append(ddev, strings.Join(c, " "))
+		}
+	}
+	if strings.Join(ddev, ",") != "ddev stop dashboard,ddev restart dashboard,ddev start x" {
+		t.Fatalf("ddev calls: %v", ddev)
+	}
+	if strings.Join(fa.calls, ",") != "up mdsite" {
+		t.Fatalf("md calls: %v", fa.calls)
 	}
 }

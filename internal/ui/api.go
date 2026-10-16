@@ -22,7 +22,9 @@ type SiteView struct {
 	DB      string            `json:"db"`
 	Search  string            `json:"search"`
 	URLs    map[string]string `json:"urls"`
+	Engine  string            `json:"engine"`
 	Blocked string            `json:"blocked"`
+	Note    string            `json:"note"`
 }
 
 func (s *server) discover() []site.Site {
@@ -125,11 +127,19 @@ func (s *server) siteViews() ([]SiteView, error) {
 		case running["ddev:"+x.Name]:
 			v.Status = "ddev"
 		}
-		if err := site.Supported(x); err != nil {
-			v.Blocked = strings.ReplaceAll(err.Error(), "\n", "; ")
+		switch v.Status {
+		case "running":
+			v.Engine = "md"
+		case "ddev":
+			v.Engine = "ddev"
 		}
-		if v.Status == "ddev" {
-			v.Blocked = strings.TrimPrefix(v.Blocked+"; DDEV containers present, run ddev stop first", "; ")
+		if err := site.Supported(x); err != nil {
+			reason := strings.ReplaceAll(err.Error(), "\n", "; ")
+			if v.Source == "md" {
+				v.Blocked = reason
+			} else {
+				v.Note = reason
+			}
 		}
 		views = append(views, v)
 	}

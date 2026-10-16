@@ -70,6 +70,12 @@
       .then(function () { delete busy[name]; refreshSites(); });
   }
 
+  function badge(parent, text, title) {
+    var b = el("span", "badge", text);
+    b.title = title;
+    parent.appendChild(b);
+  }
+
   function actionBtn(label, name, action, disabled) {
     var b = el("button", "", label);
     b.disabled = disabled;
@@ -102,11 +108,14 @@
       tr.appendChild(el("td", "num", u ? fmtMem(u.mem) : "-"));
       tr.appendChild(el("td", "num", u ? u.cpu.toFixed(1) + "%" : "-"));
       var ac = el("td", "actions");
-      var locked = !!s.blocked || !!busy[s.name];
-      ac.appendChild(actionBtn("Up", s.name, "up", locked || s.status === "running"));
-      ac.appendChild(actionBtn("Stop", s.name, "stop", locked || s.status !== "running"));
-      ac.appendChild(actionBtn("Restart", s.name, "restart", locked || s.status !== "running"));
-      if (s.blocked) ac.appendChild(el("span", "blocked", s.blocked));
+      var wait = !!busy[s.name];
+      var up = s.status !== "stopped";
+      ac.appendChild(actionBtn("Up", s.name, "up", wait || up || !!s.blocked));
+      ac.appendChild(actionBtn("Stop", s.name, "stop", wait || !up));
+      ac.appendChild(actionBtn("Restart", s.name, "restart", wait || !up));
+      if (s.blocked) badge(ac, "chưa hỗ trợ md", s.blocked);
+      else if (s.note) badge(ac, "chưa hỗ trợ md", s.note);
+      if (s.status === "stopped" && s.source === "ddev" && !s.blocked) badge(ac, "md migrate", "Run md migrate in the site root to move this site to md");
       tr.appendChild(ac);
       tb.appendChild(tr);
     });

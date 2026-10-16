@@ -154,15 +154,7 @@ func (s *server) release(key string) {
 
 func (s *server) handleSiteAction(w http.ResponseWriter, req *http.Request) {
 	name, action := req.PathValue("name"), req.PathValue("action")
-	var fn func(string) error
-	switch action {
-	case "up":
-		fn = s.actions.Up
-	case "stop":
-		fn = s.actions.Stop
-	case "restart":
-		fn = s.actions.Restart
-	default:
+	if action != "up" && action != "stop" && action != "restart" {
 		http.NotFound(w, req)
 		return
 	}
@@ -175,7 +167,7 @@ func (s *server) handleSiteAction(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer s.release(name)
-	respond(w, fn(name))
+	respond(w, s.dispatch(name, action))
 }
 
 func (s *server) handlePoweroff(w http.ResponseWriter, _ *http.Request) {
@@ -185,4 +177,31 @@ func (s *server) handlePoweroff(w http.ResponseWriter, _ *http.Request) {
 	}
 	defer s.release(poweroffKey)
 	respond(w, s.actions.Poweroff())
+}
+
+func (s *server) dispatch(name, action string) error {
+	views, err := s.siteViews()
+	if err != nil {
+		return err
+	}
+	for _, v := range views {
+		if v.Name != name {
+			continue
+		}
+		if v.Engine == "ddev" && action == "up" {
+			return fmt.Errorf("%s is already running under ddev", name)
+		}
+		if v.Engine == "ddev" || (v.Engine == "" && v.Source == "ddev") {
+			verb := map[string]string{"up": "start", "stop": "stop", "restart": "restart"}[action]
+			_, err := s.r.Run("ddev", verb, name)
+			return err
+		}
+	}
+	switch action {
+	case "up":
+		return s.actions.Up(name)
+	case "stop":
+		return s.actions.Stop(name)
+	}
+	return s.actions.Restart(name)
 }

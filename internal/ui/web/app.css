@@ -30,7 +30,7 @@ a:hover{text-decoration:underline}
 .st.ddev{color:var(--warn)}
 .st.stopped{color:var(--off)}
 .st.busy{color:var(--accent)}
-.blocked{color:var(--muted);font-size:12px;white-space:normal;max-width:360px}
+.badge{color:var(--muted);font-size:11px;border:1px solid var(--line);border-radius:10px;padding:1px 8px;cursor:help}
 td.actions{display:flex;gap:4px;align-items:center}
 #msg{margin:12px 16px 0;padding:8px 12px;border-radius:6px;background:var(--card);border:1px solid var(--danger);color:var(--danger)}
 .clean{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
