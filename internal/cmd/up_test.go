@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"errors"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 
 	"github.com/chuccv/m2-docker/internal/run"
 )

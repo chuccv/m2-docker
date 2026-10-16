@@ -81,6 +81,7 @@ func TestInstallOrderEmptyDir(t *testing.T) {
 	}
 	order := []string{
 		"docker volume create --label com.md.db=mariadb_11.4 shop-mariadb",
+		web + "rm -rf /tmp/md-install",
 		web + "composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition=2.4.8 /tmp/md-install",
 		web + "cp -a /tmp/md-install/. /var/www/html/",
 		web + "php bin/magento setup:install",
@@ -98,6 +99,19 @@ func TestInstallOrderEmptyDir(t *testing.T) {
 			t.Fatalf("%q at %d, previous %d\n%s", o, i, last, strings.Join(cs, "\n"))
 		}
 		last = i
+	}
+	rm := web + "rm -rf /tmp/md-install"
+	n := 0
+	for i, c := range cs {
+		if c == rm {
+			n++
+			if n == 2 && i < idx(cs, "cp -a") {
+				t.Error("second rm before cp")
+			}
+		}
+	}
+	if n != 2 {
+		t.Errorf("rm count %d", n)
 	}
 	inst := cs[idx(cs, "setup:install")]
 	for _, w := range []string{"--base-url=https://shop.ddev.site/", "--base-url-secure=https://shop.ddev.site/", "--use-secure=1", "--use-secure-admin=1",
@@ -257,5 +271,36 @@ func TestInstallNeverLogsAuth(t *testing.T) {
 	Install(fx.opts, fx.f, fx.home, fx.ports)
 	if strings.Contains(out.String(), "auth.json") {
 		t.Fatal("auth leaked")
+	}
+}
+
+func TestInstallRefusesEnvPhpWithoutConfig(t *testing.T) {
+	fx := setup(t)
+	os.MkdirAll(filepath.Join(fx.root, "app", "etc"), 0o755)
+	os.WriteFile(filepath.Join(fx.root, "app", "etc", "env.php"), []byte("<?php"), 0o644)
+	cs, err := fx.run()
+	if err == nil || !strings.Contains(err.Error(), "md up") || len(cs) != 0 {
+		t.Fatalf("err %v calls %v", err, cs)
+	}
+}
+
+func TestInstallRedactsSecretsInErrors(t *testing.T) {
+	fx := setup(t)
+	fx.opts.AdminPassword = "Secret123x"
+	fx.f.Err[web+"php bin/magento setup:install"] = nil
+	cs, _ := fx.run()
+	_ = cs
+	full := ""
+	for _, c := range fx.f.Calls {
+		if strings.Contains(strings.Join(c, " "), "setup:install") {
+			full = strings.Join(c, " ")
+		}
+	}
+	fx2 := setup(t)
+	fx2.opts.AdminPassword = "Secret123x"
+	fx2.f.Err[full] = os.ErrPermission
+	_, err := fx2.run()
+	if err == nil || strings.Contains(err.Error(), "Secret123x") || !strings.Contains(err.Error(), "--admin-password=***") {
+		t.Fatalf("err %v", err)
 	}
 }

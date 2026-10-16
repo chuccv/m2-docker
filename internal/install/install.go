@@ -51,9 +51,22 @@ func webArgs(name string, cmd ...string) []string {
 	return append([]string{"exec", "-u", "1000", "-w", webRoot, "ddev-" + name + "-web"}, cmd...)
 }
 
+func redact(cmd []string) string {
+	out := make([]string, len(cmd))
+	for i, a := range cmd {
+		out[i] = a
+		for _, p := range []string{"--admin-password=", "--db-password="} {
+			if strings.HasPrefix(a, p) {
+				out[i] = p + "***"
+			}
+		}
+	}
+	return strings.Join(out, " ")
+}
+
 func stream(r run.Runner, name string, cmd ...string) error {
 	if err := r.Stream("docker", webArgs(name, cmd...)...); err != nil {
-		return fmt.Errorf("%s: %w", strings.Join(cmd, " "), err)
+		return fmt.Errorf("%s: %w", redact(cmd), err)
 	}
 	return nil
 }
@@ -100,7 +113,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) error {
 	if err != nil {
 		return err
 	}
-	if (site.HasMDConfig(root) || exists(filepath.Join(root, ".ddev", "config.yaml"))) && exists(filepath.Join(root, "app", "etc", "env.php")) {
+	if exists(filepath.Join(root, "app", "etc", "env.php")) {
 		return fmt.Errorf("%s is already an installed site: use `md up`", root)
 	}
 	if o.Edition != "community" && o.Edition != "enterprise" {
@@ -152,11 +165,17 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) error {
 		return err
 	}
 	if !hasComposer {
+		if err := stream(r, name, "rm", "-rf", "/tmp/md-install"); err != nil {
+			return err
+		}
 		pkg := "magento/project-" + o.Edition + "-edition=" + o.Version
 		if err := stream(r, name, "composer", "create-project", "--repository-url=https://repo.magento.com/", pkg, "/tmp/md-install"); err != nil {
 			return err
 		}
 		if err := stream(r, name, "cp", "-a", "/tmp/md-install/.", webRoot+"/"); err != nil {
+			return err
+		}
+		if err := stream(r, name, "rm", "-rf", "/tmp/md-install"); err != nil {
 			return err
 		}
 	} else if needVendor {

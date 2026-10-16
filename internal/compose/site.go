@@ -76,7 +76,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 	if p.ComposerAuth != "" {
 		web := f.Services["web"]
 		web.Volumes = append(web.Volumes, p.ComposerAuth+":/home/www/.composer/auth.json:ro")
-		web.Environment = []string{"COMPOSER_HOME=/home/www/.composer", "COMPOSER_CACHE_DIR=/tmp/composer-cache"}
+		web.Environment = append(web.Environment, "COMPOSER_HOME=/home/www/.composer", "COMPOSER_CACHE_DIR=/tmp/composer-cache")
 		f.Services["web"] = web
 	}
 	if hasAddon(s, "redis") {
