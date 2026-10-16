@@ -57,7 +57,7 @@ func newRestartCmd(e *env) *cobra.Command {
 			if err := e.stopByName(name); err != nil {
 				return err
 			}
-			return e.upByName(name, false)
+			return e.upByName(name)
 		},
 	}
 }

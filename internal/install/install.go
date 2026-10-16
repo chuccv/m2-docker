@@ -113,8 +113,15 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) error {
 	if err != nil {
 		return err
 	}
-	if exists(filepath.Join(root, "app", "etc", "env.php")) {
-		return fmt.Errorf("%s is already an installed site: use `md up`", root)
+	if exists(filepath.Join(root, ".ddev")) {
+		return fmt.Errorf("%s has a .ddev folder: use `md migrate`", root)
+	}
+	blank, err := IsBlank(root)
+	if err != nil {
+		return err
+	}
+	if !blank {
+		return fmt.Errorf("folder không trống: %s (md install chỉ chạy trên folder trắng)", root)
 	}
 	if o.Edition != "community" && o.Edition != "enterprise" {
 		return fmt.Errorf("invalid edition %q: use community or enterprise", o.Edition)
@@ -134,9 +141,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) error {
 			*ov.dst = ov.v
 		}
 	}
-	hasComposer := exists(filepath.Join(root, "composer.json"))
-	needVendor := !hasComposer || !exists(filepath.Join(root, "vendor"))
-	if needVendor && compose.ComposerAuth() == "" {
+	if compose.ComposerAuth() == "" {
 		return fmt.Errorf("composer auth.json not found: put Magento keys in $COMPOSER_HOME/auth.json or ~/.composer/auth.json")
 	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
@@ -164,24 +169,18 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) error {
 	if err := o.Up(s); err != nil {
 		return err
 	}
-	if !hasComposer {
-		if err := stream(r, name, "rm", "-rf", "/tmp/md-install"); err != nil {
-			return err
-		}
-		pkg := "magento/project-" + o.Edition + "-edition=" + o.Version
-		if err := stream(r, name, "composer", "create-project", "--repository-url=https://repo.magento.com/", pkg, "/tmp/md-install"); err != nil {
-			return err
-		}
-		if err := stream(r, name, "cp", "-a", "/tmp/md-install/.", webRoot+"/"); err != nil {
-			return err
-		}
-		if err := stream(r, name, "rm", "-rf", "/tmp/md-install"); err != nil {
-			return err
-		}
-	} else if needVendor {
-		if err := stream(r, name, "composer", "install"); err != nil {
-			return err
-		}
+	if err := stream(r, name, "rm", "-rf", "/tmp/md-install"); err != nil {
+		return err
+	}
+	pkg := "magento/project-" + o.Edition + "-edition=" + o.Version
+	if err := stream(r, name, "composer", "create-project", "--repository-url=https://repo.magento.com/", pkg, "/tmp/md-install"); err != nil {
+		return err
+	}
+	if err := stream(r, name, "cp", "-a", "/tmp/md-install/.", webRoot+"/"); err != nil {
+		return err
+	}
+	if err := stream(r, name, "rm", "-rf", "/tmp/md-install"); err != nil {
+		return err
 	}
 	url := baseURL(name+".ddev.site", ports.HTTPS)
 	err = magento(r, name, "setup:install",

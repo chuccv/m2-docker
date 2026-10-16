@@ -24,6 +24,19 @@ const (
 
 func upEnv(t *testing.T) (*env, *run.FakeRunner, string) {
 	t.Helper()
+	e, f, home, dir := ddevEnv(t)
+	mdCfg := "name: ee249-qa\ntype: magento2\nphp: \"8.5\"\nnode: \"22.11.0\"\nsearch: 2.19.1\nhostnames:\n  - shop.ddev.site\ndatabase:\n  type: mariadb\n  version: \"11.4\"\n"
+	if err := os.MkdirAll(filepath.Join(dir, ".md"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".md", "config.yaml"), []byte(mdCfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return e, f, home
+}
+
+func ddevEnv(t *testing.T) (*env, *run.FakeRunner, string, string) {
+	t.Helper()
 	e, f, root := testEnv(t, false)
 	sd := filepath.Join(root, "ee249-qa", ".ddev")
 	if err := os.WriteFile(filepath.Join(sd, "config.yaml"), []byte(siteCfg), 0o644); err != nil {
@@ -46,7 +59,7 @@ func upEnv(t *testing.T) (*env, *run.FakeRunner, string) {
 	}
 	f.Out = map[string]string{dbKey: "11.4.2", imgKey: h + "\n"}
 	f.Err = map[string]error{}
-	return e, f, home
+	return e, f, home, filepath.Join(root, "ee249-qa")
 }
 
 func calls(f *run.FakeRunner) []string {
@@ -92,7 +105,6 @@ func TestUpCallOrder(t *testing.T) {
 		"docker network connect --alias opensearch md-ee249-qa_default md-opensearch-2.19.1",
 		"docker network connect --alias xhgui md-ee249-qa_default md-xhgui",
 		"docker network connect --alias ee249-qa.ddev.site --alias shop.ddev.site md-ee249-qa_default md-router",
-		"bin/magento config:set",
 	}
 	last := -1
 	for _, o := range order {
@@ -244,20 +256,6 @@ func TestPoweroffContinuesPastFailure(t *testing.T) {
 	}
 }
 
-func TestUpSkipMigrate(t *testing.T) {
-	e, f, _ := upEnv(t)
-	if err := exec(t, e, "up", "--skip-migrate"); err != nil {
-		t.Fatal(err)
-	}
-	cs := calls(f)
-	if index(cs, "config:set") >= 0 || index(cs, "indexer:reindex") >= 0 {
-		t.Fatalf("migrate ran with --skip-migrate:\n%s", strings.Join(cs, "\n"))
-	}
-	if index(cs, "docker compose -p md-ee249-qa") < 0 {
-		t.Fatalf("site not started:\n%s", strings.Join(cs, "\n"))
-	}
-}
-
 func TestUpCreatesSharedMountDirs(t *testing.T) {
 	e, _, home := upEnv(t)
 	if err := exec(t, e, "up"); err != nil {
@@ -295,16 +293,6 @@ func TestUpWritesXhguiConfig(t *testing.T) {
 	}
 }
 
-func TestUpWithoutSkipMigrateRunsMigrate(t *testing.T) {
-	e, f, _ := upEnv(t)
-	if err := exec(t, e, "up"); err != nil {
-		t.Fatal(err)
-	}
-	if index(calls(f), "config:set") < 0 {
-		t.Fatalf("migrate did not run:\n%s", strings.Join(calls(f), "\n"))
-	}
-}
-
 func TestUpNodePopulateFailureRemovesVolume(t *testing.T) {
 	e, f, _ := upEnv(t)
 	f.Err[volKey] = errors.New("no such volume")
@@ -338,5 +326,61 @@ func TestInstallCmdRegistered(t *testing.T) {
 	c, _, err := root.Find([]string{"install"})
 	if err != nil || c.Name() != "install" || c.Flags().Lookup("sample-data") == nil || c.Flags().Lookup("admin-password").DefValue != "admin123" {
 		t.Fatalf("install cmd: %v", err)
+	}
+}
+
+func TestUpRefusesDDEVOnlySite(t *testing.T) {
+	e, f, _, _ := ddevEnv(t)
+	err := exec(t, e, "up")
+	if err == nil || !strings.Contains(err.Error(), "md migrate") {
+		t.Fatalf("err %v", err)
+	}
+	if hasPrefixCall(calls(f), "docker compose") {
+		t.Fatalf("compose ran:\n%s", strings.Join(calls(f), "\n"))
+	}
+}
+
+func TestUpHasNoSkipMigrateFlag(t *testing.T) {
+	e, _, _ := upEnv(t)
+	if err := exec(t, e, "up", "--skip-migrate"); err == nil {
+		t.Fatal("flag should not exist")
+	}
+}
+
+func TestUpDoesNotRunSearchMigration(t *testing.T) {
+	e, f, _ := upEnv(t)
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	if index(calls(f), "indexer:reindex") >= 0 {
+		t.Fatalf("migration in up:\n%s", strings.Join(calls(f), "\n"))
+	}
+}
+
+func TestMigrateCmd(t *testing.T) {
+	e, f, home, dir := ddevEnv(t)
+	if err := exec(t, e, "migrate"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".md", "config.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	cs := calls(f)
+	up := index(cs, "docker compose -p md-ee249-qa")
+	re := index(cs, "indexer:reindex")
+	lock := index(cs, "web/secure/base_url https://ee249-qa.ddev.site")
+	if up < 0 || re < up || lock < re {
+		t.Fatalf("order up=%d reindex=%d lock=%d\n%s", up, re, lock, strings.Join(cs, "\n"))
+	}
+	if _, err := os.Stat(filepath.Join(home, "sites", "ee249-qa", ".md-migrated")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMigrateCmdRefusesMigratedSite(t *testing.T) {
+	e, f, _ := upEnv(t)
+	err := exec(t, e, "migrate")
+	if err == nil || !strings.Contains(err.Error(), "đã migrate") || len(f.Calls) != 0 {
+		t.Fatalf("err %v calls %v", err, f.Calls)
 	}
 }

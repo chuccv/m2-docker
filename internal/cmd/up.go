@@ -16,7 +16,6 @@ import (
 	"github.com/chuccv/m2-docker/internal/compose"
 	"github.com/chuccv/m2-docker/internal/config"
 	"github.com/chuccv/m2-docker/internal/guard"
-	"github.com/chuccv/m2-docker/internal/migrate"
 	"github.com/chuccv/m2-docker/internal/router"
 	"github.com/chuccv/m2-docker/internal/site"
 	"github.com/chuccv/m2-docker/internal/tls"
@@ -153,7 +152,7 @@ func (e *env) connect(args ...string) {
 	}
 }
 
-func (e *env) up(s site.Site, home string, skipMigrate bool) error {
+func (e *env) up(s site.Site, home string) error {
 	cfg, err := config.Load(home)
 	if err != nil {
 		return err
@@ -235,11 +234,6 @@ func (e *env) up(s site.Site, home string, skipMigrate bool) error {
 		aliases = append(aliases, "--alias", h)
 	}
 	e.connect(append(aliases, net, "md-router")...)
-	if s.SearchVersion != "" && !skipMigrate {
-		if err := migrate.EnsureSearchMigrated(home, s, e.runner); err != nil {
-			return err
-		}
-	}
 	for _, h := range s.Hostnames {
 		fmt.Fprintln(e.writer(), siteURL(h, cfg.Ports.HTTPS))
 	}
@@ -254,17 +248,14 @@ func siteURL(host string, httpsPort int) string {
 }
 
 func newUpCmd(e *env) *cobra.Command {
-	var skipMigrate bool
-	cmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "up [name]",
 		Short: "Start a site",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return e.upByName(nameArg(args), skipMigrate)
+			return e.upByName(nameArg(args))
 		},
 	}
-	cmd.Flags().BoolVar(&skipMigrate, "skip-migrate", false, "skip search engine migration")
-	return cmd
 }
 
 func nameArg(args []string) string {
@@ -274,14 +265,17 @@ func nameArg(args []string) string {
 	return ""
 }
 
-func (e *env) upByName(name string, skipMigrate bool) error {
+func (e *env) upByName(name string) error {
 	s, err := e.findSite(name)
 	if err != nil {
 		return err
+	}
+	if !site.HasMDConfig(s.Root) {
+		return fmt.Errorf("%s chưa có .md/config.yaml: chạy `md migrate` trước", s.Root)
 	}
 	home, err := e.home()
 	if err != nil {
 		return err
 	}
-	return e.up(s, home, skipMigrate)
+	return e.up(s, home)
 }

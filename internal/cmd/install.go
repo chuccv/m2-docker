@@ -10,6 +10,20 @@ import (
 	"github.com/chuccv/m2-docker/internal/site"
 )
 
+func (e *env) rootArg(args []string) (string, error) {
+	wd, err := e.getwd()
+	if err != nil {
+		return "", err
+	}
+	if len(args) == 0 {
+		return wd, nil
+	}
+	if filepath.IsAbs(args[0]) {
+		return args[0], nil
+	}
+	return filepath.Join(wd, args[0]), nil
+}
+
 func newInstallCmd(e *env) *cobra.Command {
 	var o install.Options
 	cmd := &cobra.Command{
@@ -17,17 +31,11 @@ func newInstallCmd(e *env) *cobra.Command {
 		Short: "Install a fresh Magento into a folder",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			wd, err := e.getwd()
+			root, err := e.rootArg(args)
 			if err != nil {
 				return err
 			}
-			o.Root = wd
-			if len(args) > 0 {
-				o.Root = args[0]
-				if !filepath.IsAbs(o.Root) {
-					o.Root = filepath.Join(wd, o.Root)
-				}
-			}
+			o.Root = root
 			home, err := e.home()
 			if err != nil {
 				return err
@@ -37,7 +45,7 @@ func newInstallCmd(e *env) *cobra.Command {
 				return err
 			}
 			o.Out = e.writer()
-			o.Up = func(s site.Site) error { return e.up(s, home, true) }
+			o.Up = func(s site.Site) error { return e.up(s, home) }
 			return install.Install(o, e.runner, home, cfg.Ports)
 		},
 	}

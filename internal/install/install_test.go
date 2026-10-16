@@ -129,31 +129,6 @@ func TestInstallOrderEmptyDir(t *testing.T) {
 	}
 }
 
-func TestInstallExistingCodeSkipsCreateProject(t *testing.T) {
-	fx := setup(t)
-	os.MkdirAll(filepath.Join(fx.root, "vendor"), 0o755)
-	os.WriteFile(filepath.Join(fx.root, "composer.json"), []byte("{}"), 0o644)
-	cs, err := fx.run()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if idx(cs, "create-project") >= 0 || idx(cs, "composer install") >= 0 {
-		t.Fatalf("unexpected composer: %v", cs)
-	}
-}
-
-func TestInstallComposerInstallWhenNoVendor(t *testing.T) {
-	fx := setup(t)
-	os.WriteFile(filepath.Join(fx.root, "composer.json"), []byte("{}"), 0o644)
-	cs, err := fx.run()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if idx(cs, web+"composer install") < 0 || idx(cs, "create-project") >= 0 {
-		t.Fatalf("calls: %v", cs)
-	}
-}
-
 func TestInstallRefusesInstalledSite(t *testing.T) {
 	fx := setup(t)
 	os.MkdirAll(filepath.Join(fx.root, ".ddev"), 0o755)
@@ -161,7 +136,7 @@ func TestInstallRefusesInstalledSite(t *testing.T) {
 	os.MkdirAll(filepath.Join(fx.root, "app", "etc"), 0o755)
 	os.WriteFile(filepath.Join(fx.root, "app", "etc", "env.php"), []byte("<?php"), 0o644)
 	cs, err := fx.run()
-	if err == nil || !strings.Contains(err.Error(), "md up") {
+	if err == nil || !strings.Contains(err.Error(), "md migrate") {
 		t.Fatalf("err %v", err)
 	}
 	if len(cs) != 0 || site.HasMDConfig(fx.root) {
@@ -279,7 +254,7 @@ func TestInstallRefusesEnvPhpWithoutConfig(t *testing.T) {
 	os.MkdirAll(filepath.Join(fx.root, "app", "etc"), 0o755)
 	os.WriteFile(filepath.Join(fx.root, "app", "etc", "env.php"), []byte("<?php"), 0o644)
 	cs, err := fx.run()
-	if err == nil || !strings.Contains(err.Error(), "md up") || len(cs) != 0 {
+	if err == nil || !strings.Contains(err.Error(), "folder không trống") || len(cs) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
 	}
 }
@@ -302,5 +277,42 @@ func TestInstallRedactsSecretsInErrors(t *testing.T) {
 	_, err := fx2.run()
 	if err == nil || strings.Contains(err.Error(), "Secret123x") || !strings.Contains(err.Error(), "--admin-password=***") {
 		t.Fatalf("err %v", err)
+	}
+}
+
+func TestInstallRefusesNonBlankFolder(t *testing.T) {
+	fx := setup(t)
+	os.WriteFile(filepath.Join(fx.root, "composer.json"), []byte("{}"), 0o644)
+	cs, err := fx.run()
+	if err == nil || !strings.Contains(err.Error(), "folder không trống") || len(cs) != 0 || site.HasMDConfig(fx.root) {
+		t.Fatalf("err %v calls %v", err, cs)
+	}
+}
+
+func TestInstallAllowsGitAndMDEntries(t *testing.T) {
+	fx := setup(t)
+	os.MkdirAll(filepath.Join(fx.root, ".git"), 0o755)
+	os.MkdirAll(filepath.Join(fx.root, ".md"), 0o755)
+	if _, err := fx.run(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestIsBlank(t *testing.T) {
+	d := t.TempDir()
+	if ok, err := IsBlank(d); err != nil || !ok {
+		t.Fatalf("empty: %v %v", ok, err)
+	}
+	if ok, err := IsBlank(filepath.Join(d, "missing")); err != nil || !ok {
+		t.Fatalf("missing: %v %v", ok, err)
+	}
+	os.MkdirAll(filepath.Join(d, ".git"), 0o755)
+	os.MkdirAll(filepath.Join(d, ".md"), 0o755)
+	if ok, _ := IsBlank(d); !ok {
+		t.Fatal(".git/.md should be blank")
+	}
+	os.WriteFile(filepath.Join(d, "composer.json"), []byte("{}"), 0o644)
+	if ok, _ := IsBlank(d); ok {
+		t.Fatal("composer.json should not be blank")
 	}
 }
