@@ -36,6 +36,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 					s.Root + ":/var/www/html",
 					nodeVol + ":/opt/node:ro",
 					p.Home + "/ca/rootCA.pem:/usr/local/share/ca-certificates/md.crt:ro",
+					p.Home + "/sites/" + s.Name + "/nginx-run.conf:/etc/nginx/md-run.conf:ro",
 				},
 				ExtraHosts: []string{"host.docker.internal:host-gateway"},
 				Labels:     managed,

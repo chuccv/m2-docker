@@ -1,0 +1,16 @@
+name: shop
+type: magento2
+php: "8.3"
+database:
+  type: mariadb
+  version: "10.6"
+websites:
+  - host: shop.ddev.site
+    code: base
+    type: website
+  - host: b2b.shop.ddev.site
+    code: b2b
+    type: website
+  - host: fr.shop.ddev.site
+    code: fr
+    type: store

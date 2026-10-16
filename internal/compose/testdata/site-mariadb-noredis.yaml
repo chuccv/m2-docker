@@ -21,6 +21,7 @@ services:
       - /var/www/html/pfsm248:/var/www/html
       - md-node-24:/opt/node:ro
       - /home/neil/.md/ca/rootCA.pem:/usr/local/share/ca-certificates/md.crt:ro
+      - /home/neil/.md/sites/pfsm248/nginx-run.conf:/etc/nginx/md-run.conf:ro
     extra_hosts:
       - host.docker.internal:host-gateway
     labels:

@@ -29,6 +29,7 @@ services:
       - /var/www/html/ee249-qa:/var/www/html
       - md-node-24:/opt/node:ro
       - /home/neil/.md/ca/rootCA.pem:/usr/local/share/ca-certificates/md.crt:ro
+      - /home/neil/.md/sites/ee249-qa/nginx-run.conf:/etc/nginx/md-run.conf:ro
     extra_hosts:
       - host.docker.internal:host-gateway
     labels:

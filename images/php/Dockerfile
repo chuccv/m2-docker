@@ -25,6 +25,7 @@ RUN chmod +x /usr/local/bin/install-php-extensions \
  && rm -rf /var/lib/apt/lists/* /tmp/* /usr/share/doc /usr/share/man /var/cache/apt
 
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY md-run.conf /etc/nginx/md-run.conf
 COPY pool.conf /usr/local/etc/php-fpm.d/www.conf
 COPY conf.d/ /usr/local/etc/php/conf.d/
 COPY prepend.php /usr/local/share/php-profiler/prepend.php

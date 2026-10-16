@@ -43,8 +43,10 @@ run grep -q 'max_children = 16' /usr/local/etc/php-fpm.d/www.conf || fail max_ch
 
 tmp="$(mktemp -d)"
 openssl req -x509 -newkey rsa:2048 -nodes -keyout "$tmp/k.pem" -out "$tmp/md.crt" -subj "/CN=md-test-ca" -days 1 >/dev/null 2>&1
-mkdir "$tmp/www"
-cid="$(docker run -d -v "$tmp/www:/var/www/html" -v "$tmp/md.crt:/usr/local/share/ca-certificates/md.crt:ro" "$tag")"
+mkdir -p "$tmp/www/pub"
+printf '<?php echo $_SERVER["MAGE_RUN_CODE"] ?? "unset", "|", $_SERVER["MAGE_RUN_TYPE"] ?? "unset";' > "$tmp/www/pub/index.php"
+printf 'map $host $md_run_code {\n    default "";\n    b2b.shop.ddev.site "b2b";\n}\nmap $host $md_run_type {\n    default "";\n    b2b.shop.ddev.site "website";\n}\n' > "$tmp/md-run.conf"
+cid="$(docker run -d -v "$tmp/www:/var/www/html" -v "$tmp/md-run.conf:/etc/nginx/md-run.conf:ro" -v "$tmp/md.crt:/usr/local/share/ca-certificates/md.crt:ro" "$tag")"
 trap 'docker rm -f "$cid" >/dev/null 2>&1; rm -rf "$tmp"; restore' EXIT
 sleep 5
 docker exec "$cid" touch /var/www/html/x
@@ -53,7 +55,9 @@ docker exec "$cid" touch /var/www/html/x
 docker exec "$cid" sh -c 'grep -c . /etc/ssl/certs/ca-certificates.crt >/dev/null; ls /etc/ssl/certs/md.pem' >/dev/null || fail "CA not installed"
 docker exec "$cid" sh -c 'openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt /usr/local/share/ca-certificates/md.crt' >/dev/null 2>&1 || fail "CA not in bundle"
 docker exec "$cid" sh -c 'curl -fs -o /dev/null -w "%{http_code}" http://127.0.0.1:8025/ | grep -q 200' || fail "mailpit UI"
-docker exec "$cid" sh -c 'curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/ | grep -Eq "^(404|403|50[0-9])$"' || fail "nginx not responding"
+docker exec "$cid" sh -c 'curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/ | grep -Eq "^(200|404|403|50[0-9])$"' || fail "nginx not responding"
+[ "$(docker exec "$cid" curl -s -H 'Host: b2b.shop.ddev.site' http://127.0.0.1/index.php)" = "b2b|website" ] || fail "MAGE_RUN_CODE not set for b2b host"
+[ "$(docker exec "$cid" curl -s -H 'Host: shop.ddev.site' http://127.0.0.1/index.php)" = "|" ] || fail "MAGE_RUN_CODE not empty for default host"
 procs="$(docker exec "$cid" sh -c 'for d in /proc/[0-9]*; do echo "$(cat $d/comm) $(stat -c %U $d)"; done')"
 for p in php-fpm nginx mailpit; do
     grep -qx "$p www" <<<"$procs" || fail "$p not running as www"

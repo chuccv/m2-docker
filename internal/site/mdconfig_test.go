@@ -108,3 +108,21 @@ func TestFindByCwdMDOnly(t *testing.T) {
 		t.Fatalf("scan: %v %+v", err, s)
 	}
 }
+
+func TestLoadWebsites(t *testing.T) {
+	s := load(t, "md-multi")
+	if strings.Join(s.Hostnames, ",") != "shop.ddev.site,b2b.shop.ddev.site,fr.shop.ddev.site" {
+		t.Fatalf("hostnames %v", s.Hostnames)
+	}
+	if len(s.Websites) != 3 || s.Websites[1] != (Website{Host: "b2b.shop.ddev.site", Code: "b2b", Type: "website"}) || s.Websites[2].Type != "store" {
+		t.Fatalf("websites %+v", s.Websites)
+	}
+}
+
+func TestLoadWebsitesInvalidType(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "name: a\nwebsites:\n  - host: x.test\n    code: x\n    type: group\n")
+	if _, err := Load(dir); err == nil || !strings.Contains(err.Error(), "type") {
+		t.Fatalf("err %v", err)
+	}
+}
