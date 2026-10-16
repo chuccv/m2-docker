@@ -126,12 +126,12 @@ func TestMysql(t *testing.T) {
 	if err := exec(t, e, "mysql"); err != nil {
 		t.Fatal(err)
 	}
-	want(t, f, "docker", "exec", "-i", "ddev-ee249-qa-db", "mysql", "-udb", "-pdb", "db")
+	want(t, f, "docker", "exec", "-i", "ddev-ee249-qa-db", "mariadb", "-udb", "-pdb", "db")
 	e, f, _ = testEnv(t, true)
 	if err := exec(t, e, "mysql", "-e", "select 1"); err != nil {
 		t.Fatal(err)
 	}
-	want(t, f, "docker", "exec", "-i", "-t", "ddev-ee249-qa-db", "mysql", "-udb", "-pdb", "db", "-e", "select 1")
+	want(t, f, "docker", "exec", "-i", "-t", "ddev-ee249-qa-db", "mariadb", "-udb", "-pdb", "db", "-e", "select 1")
 }
 
 func TestXdebugToggle(t *testing.T) {

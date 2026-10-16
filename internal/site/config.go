@@ -42,6 +42,9 @@ func Load(root string) (Site, error) {
 	if err := yaml.Unmarshal(data, &c); err != nil {
 		return Site{}, fmt.Errorf("parse %s: %w", filepath.Join(ddev, "config.yaml"), err)
 	}
+	if c.Name == "" {
+		c.Name = filepath.Base(root)
+	}
 	s := Site{
 		Name:        c.Name,
 		Root:        root,

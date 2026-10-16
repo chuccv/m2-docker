@@ -5,7 +5,7 @@ import "github.com/spf13/cobra"
 func newMySQLCmd(e *env) *cobra.Command {
 	return &cobra.Command{
 		Use:                "mysql [args...]",
-		Short:              "Open the mysql client in the db container",
+		Short:              "Open the mariadb client in the db container",
 		DisableFlagParsing: true,
 		RunE: func(_ *cobra.Command, args []string) error {
 			name, rest := takeSite(args)
@@ -13,7 +13,7 @@ func newMySQLCmd(e *env) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			tail := append([]string{"ddev-" + s.Name + "-db", "mysql", "-udb", "-pdb", "db"}, rest...)
+			tail := append([]string{"ddev-" + s.Name + "-db", "mariadb", "-udb", "-pdb", "db"}, rest...)
 			return e.dockerExec(tail...)
 		},
 	}

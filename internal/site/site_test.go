@@ -141,3 +141,22 @@ func TestSupportedRejectsMySQL(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 }
+
+func TestLoadNameDefaultsToDirBase(t *testing.T) {
+	for _, cfg := range []string{"type: magento2\n", "name: \"\"\ntype: magento2\n"} {
+		root := filepath.Join(t.TempDir(), "my-shop")
+		if err := os.MkdirAll(filepath.Join(root, ".ddev"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, ".ddev", "config.yaml"), []byte(cfg), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		s, err := Load(root)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s.Name != "my-shop" || s.Hostnames[0] != "my-shop.ddev.site" {
+			t.Fatalf("got %+v", s)
+		}
+	}
+}
