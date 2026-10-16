@@ -24,8 +24,8 @@ func (e *env) stopByName(name string) error {
 		return err
 	}
 	versions := st.SearchVersions
-	if s.SearchVersion != "" && !hasString(versions, s.SearchVersion) {
-		versions = append(append([]string{}, versions...), s.SearchVersion)
+	if key := s.SearchKey(); key != "" && !hasString(versions, key) {
+		versions = append(append([]string{}, versions...), key)
 	}
 	return e.stopSite(home, s.Name, versions)
 }

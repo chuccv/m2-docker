@@ -172,3 +172,11 @@ func TestRenderVCL(t *testing.T) {
 		t.Fatal("placeholder or comment left in VCL")
 	}
 }
+
+func TestRenderSharedElasticsearch(t *testing.T) {
+	out, err := RenderShared([]string{"2.19.1", "elasticsearch:7.17.14"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "shared-elasticsearch.yaml", out)
+}

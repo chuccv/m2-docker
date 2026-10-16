@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/chuccv/m2-docker/internal/run"
+	"github.com/chuccv/m2-docker/internal/site"
 )
 
 func ComposeFile(home, name string) string {
@@ -14,7 +15,7 @@ func Down(r run.Runner, home, name string, searchVersions []string) error {
 	net := "md-" + name + "_default"
 	targets := []string{"md-router", "md-xhgui"}
 	for _, v := range searchVersions {
-		targets = append(targets, "md-opensearch-"+v)
+		targets = append(targets, site.SearchContainer(v))
 	}
 	for _, c := range targets {
 		r.Run("docker", "network", "disconnect", net, c)

@@ -43,3 +43,17 @@ func TestComposeFile(t *testing.T) {
 		t.Fatal(ComposeFile("/h", "a"))
 	}
 }
+
+func TestDownDisconnectsElasticsearch(t *testing.T) {
+	f := &run.FakeRunner{Out: map[string]string{}, Err: map[string]error{}}
+	if err := Down(f, "/h", "a", []string{"elasticsearch:7.17.14"}); err != nil {
+		t.Fatal(err)
+	}
+	var cs []string
+	for _, c := range f.Calls {
+		cs = append(cs, strings.Join(c, " "))
+	}
+	if !strings.Contains(strings.Join(cs, "\n"), "docker network disconnect md-a_default md-elasticsearch-7.17.14") {
+		t.Fatalf("%v", cs)
+	}
+}

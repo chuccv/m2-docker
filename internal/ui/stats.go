@@ -59,7 +59,7 @@ func trimRuntime(container string) string {
 }
 
 func isShared(rest string) bool {
-	return rest == "router" || rest == "xhgui" || rest == "ssh-agent" || rest == "shared" || strings.HasPrefix(rest, "opensearch-") || strings.HasPrefix(rest, "shared-")
+	return rest == "router" || rest == "xhgui" || rest == "ssh-agent" || rest == "shared" || strings.HasPrefix(rest, "opensearch-") || strings.HasPrefix(rest, "elasticsearch-") || strings.HasPrefix(rest, "shared-")
 }
 
 func siteOf(container string, known []string) (string, bool) {

@@ -399,3 +399,13 @@ func TestFromDDEVVarnish(t *testing.T) {
 		t.Fatalf("%+v", c)
 	}
 }
+
+func TestFromDDEVElasticsearch(t *testing.T) {
+	s, err := site.Load(filepath.Join("..", "site", "testdata", "site-es"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := FromDDEV(s); c.SearchEngine != "elasticsearch" || c.Search != "7.17.14" {
+		t.Fatalf("%+v", c)
+	}
+}

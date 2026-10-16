@@ -19,6 +19,7 @@ var allowedCompose = map[string]bool{
 	"redis":             true,
 	"mutagen":           true,
 	"varnish":           true,
+	"elasticsearch":     true,
 	"xhgui-extended":    true,
 	"xhgui-ext-route":   true,
 	"no-os-dashboards":  true,

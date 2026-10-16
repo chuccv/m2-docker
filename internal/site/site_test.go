@@ -72,7 +72,7 @@ func TestLoadMissing(t *testing.T) {
 func TestSupported(t *testing.T) {
 	cases := []struct {
 		name, want string
-	}{{"site-apache", "apache"}, {"site-es", "elasticsearch"}}
+	}{{"site-apache", "apache"}, {"site-es", "rabbitmq"}}
 	for _, c := range cases {
 		err := Supported(load(t, c.name))
 		if err == nil || !strings.Contains(err.Error(), c.want) {
@@ -192,5 +192,31 @@ func TestLoadVarnishDefaultVersion(t *testing.T) {
 	s, err := Load(dir)
 	if err != nil || s.Varnish != "6.0" {
 		t.Fatalf("%v %q", err, s.Varnish)
+	}
+}
+
+func TestLoadElasticsearchFromAddon(t *testing.T) {
+	s := load(t, "site-es")
+	if s.SearchEngine != "elasticsearch" || s.SearchVersion != "7.17.14" || s.SearchKey() != "elasticsearch:7.17.14" {
+		t.Fatalf("%+v", s)
+	}
+	o := load(t, "ee249-qa")
+	if o.SearchEngine != "" || o.SearchKey() != "latest" {
+		t.Fatalf("%+v", o)
+	}
+}
+
+func TestSearchContainerAndAlias(t *testing.T) {
+	for key, want := range map[string][2]string{"2.19.1": {"md-opensearch-2.19.1", "opensearch"}, "elasticsearch:7.17.14": {"md-elasticsearch-7.17.14", "elasticsearch"}} {
+		if SearchContainer(key) != want[0] || SearchAlias(key) != want[1] {
+			t.Fatalf("%s: %s %s", key, SearchContainer(key), SearchAlias(key))
+		}
+	}
+}
+
+func TestSupportedRejectsUnknownSearchEngine(t *testing.T) {
+	err := Supported(Site{Type: "magento2", Webserver: "nginx-fpm", DBType: "mariadb", SearchEngine: "solr"})
+	if err == nil || !strings.Contains(err.Error(), "solr") {
+		t.Fatalf("%v", err)
 	}
 }

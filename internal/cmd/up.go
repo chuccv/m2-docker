@@ -184,7 +184,7 @@ func (e *env) up(s site.Site, home string) error {
 	if err != nil {
 		return err
 	}
-	st.add(siteRef{Name: s.Name, Root: s.Root}, s.SearchVersion)
+	st.add(siteRef{Name: s.Name, Root: s.Root}, s.SearchKey())
 	paths := compose.Paths{Home: home, Root: s.Root, ComposerAuth: compose.ComposerAuth()}
 	for _, d := range []string{"certs", "router/dynamic"} {
 		if err := os.MkdirAll(filepath.Join(home, d), 0o755); err != nil {
@@ -251,8 +251,8 @@ func (e *env) up(s site.Site, home string) error {
 		}
 	}
 	net := "md-" + s.Name + "_default"
-	if s.SearchVersion != "" {
-		e.connect("--alias", "opensearch", net, "md-opensearch-"+s.SearchVersion)
+	if key := s.SearchKey(); key != "" {
+		e.connect("--alias", site.SearchAlias(key), net, site.SearchContainer(key))
 	}
 	e.connect("--alias", "xhgui", net, "md-xhgui")
 	var aliases []string

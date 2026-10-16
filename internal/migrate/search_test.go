@@ -68,3 +68,15 @@ func TestEnsureSearchMigratedFailure(t *testing.T) {
 		t.Fatal("marker written on failure")
 	}
 }
+
+func TestEnsureSearchMigratedElasticsearchPrefix(t *testing.T) {
+	s := newSite(t)
+	s.SearchEngine = "elasticsearch"
+	f := &run.FakeRunner{}
+	if err := EnsureSearchMigrated(t.TempDir(), s, f); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(strings.Join(f.Calls[0], " "), "catalog/search/elasticsearch7_index_prefix ee249_qa") {
+		t.Fatalf("%v", f.Calls[0])
+	}
+}

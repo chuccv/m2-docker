@@ -8,6 +8,30 @@ import (
 
 func (s Site) HasAddon(name string) bool { return contains(s.Addons, name) }
 
+func (s Site) SearchKey() string {
+	if s.SearchVersion == "" {
+		return ""
+	}
+	if s.SearchEngine == "elasticsearch" {
+		return "elasticsearch:" + s.SearchVersion
+	}
+	return s.SearchVersion
+}
+
+func SearchContainer(key string) string {
+	if v, ok := strings.CutPrefix(key, "elasticsearch:"); ok {
+		return "md-elasticsearch-" + v
+	}
+	return "md-opensearch-" + key
+}
+
+func SearchAlias(key string) string {
+	if strings.HasPrefix(key, "elasticsearch:") {
+		return "elasticsearch"
+	}
+	return "opensearch"
+}
+
 func Supported(s Site) error {
 	var errs []error
 	if s.Name == "shared" {
@@ -22,7 +46,10 @@ func Supported(s Site) error {
 	if strings.HasPrefix(s.Webserver, "apache") {
 		errs = append(errs, fmt.Errorf("webserver %q (apache) is not supported, only nginx-fpm", s.Webserver))
 	}
-	for _, a := range []string{"elasticsearch", "rabbitmq"} {
+	if s.SearchEngine != "" && s.SearchEngine != "opensearch" && s.SearchEngine != "elasticsearch" {
+		errs = append(errs, fmt.Errorf("search_engine %q is not supported, only opensearch or elasticsearch", s.SearchEngine))
+	}
+	for _, a := range []string{"rabbitmq"} {
 		if contains(s.Addons, a) {
 			errs = append(errs, fmt.Errorf("addon %s is not supported", a))
 		}

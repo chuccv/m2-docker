@@ -178,3 +178,12 @@ func TestLoadMDVarnishForms(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadMDElasticsearch(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "search_engine: elasticsearch\nsearch: \"7.17.14\"\n")
+	s, err := Load(dir)
+	if err != nil || s.SearchEngine != "elasticsearch" || s.SearchKey() != "elasticsearch:7.17.14" {
+		t.Fatalf("%v %+v", err, s)
+	}
+}
