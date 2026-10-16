@@ -14,8 +14,8 @@ func Prefix(name string) string {
 	return strings.NewReplacer("-", "_", ".", "_").Replace(strings.ToLower(name))
 }
 
-func EnsureSearchMigrated(s site.Site, r run.Runner) error {
-	marker := filepath.Join(s.Root, ".ddev", ".md-migrated")
+func EnsureSearchMigrated(home string, s site.Site, r run.Runner) error {
+	marker := filepath.Join(home, "sites", s.Name, ".md-migrated")
 	if _, err := os.Stat(marker); err == nil {
 		return nil
 	}
@@ -32,6 +32,9 @@ func EnsureSearchMigrated(s site.Site, r run.Runner) error {
 		if _, err := r.Run("docker", args...); err != nil {
 			return fmt.Errorf("search migration step %s: %w", st.label, err)
 		}
+	}
+	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
+		return err
 	}
 	return os.WriteFile(marker, nil, 0o644)
 }

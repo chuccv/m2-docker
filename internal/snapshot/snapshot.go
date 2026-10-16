@@ -15,19 +15,19 @@ import (
 
 var now = time.Now
 
-func dir(s site.Site) string {
-	return filepath.Join(s.Root, ".ddev", "md_snapshots")
+func dir(home string, s site.Site) string {
+	return filepath.Join(home, "sites", s.Name, "snapshots")
 }
 
-func Create(s site.Site, r run.Runner, label string) (string, error) {
+func Create(home string, s site.Site, r run.Runner, label string) (string, error) {
 	if label == "" {
 		label = now().Format("20060102-150405")
 	}
-	if err := os.MkdirAll(dir(s), 0o755); err != nil {
+	if err := os.MkdirAll(dir(home, s), 0o755); err != nil {
 		return "", err
 	}
-	final := filepath.Join(dir(s), s.Name+"-"+label+".sql.gz")
-	tmp, err := os.CreateTemp(dir(s), ".partial-*")
+	final := filepath.Join(dir(home, s), s.Name+"-"+label+".sql.gz")
+	tmp, err := os.CreateTemp(dir(home, s), ".partial-*")
 	if err != nil {
 		return "", err
 	}
@@ -49,7 +49,7 @@ func Create(s site.Site, r run.Runner, label string) (string, error) {
 	return final, nil
 }
 
-func Restore(s site.Site, r run.Runner, path string) error {
+func Restore(home string, s site.Site, r run.Runner, path string) error {
 	fh, err := os.Open(path)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func Restore(s site.Site, r run.Runner, path string) error {
 		return fmt.Errorf("%s is not a gzip snapshot: %w", path, err)
 	}
 	defer zr.Close()
-	pre, err := Create(s, r, "pre-restore-"+now().Format("20060102-150405"))
+	pre, err := Create(home, s, r, "pre-restore-"+now().Format("20060102-150405"))
 	if err != nil {
 		return fmt.Errorf("pre-restore snapshot failed, nothing dropped: %w", err)
 	}
@@ -74,8 +74,8 @@ func Restore(s site.Site, r run.Runner, path string) error {
 	return nil
 }
 
-func List(s site.Site) ([]string, error) {
-	entries, err := os.ReadDir(dir(s))
+func List(home string, s site.Site) ([]string, error) {
+	entries, err := os.ReadDir(dir(home, s))
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
@@ -95,7 +95,7 @@ func List(s site.Site) ([]string, error) {
 		if err != nil {
 			continue
 		}
-		fs = append(fs, file{filepath.Join(dir(s), e.Name()), info.ModTime()})
+		fs = append(fs, file{filepath.Join(dir(home, s), e.Name()), info.ModTime()})
 	}
 	sort.Slice(fs, func(i, j int) bool { return fs[i].mod.After(fs[j].mod) })
 	out := make([]string, len(fs))

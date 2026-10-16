@@ -37,8 +37,12 @@ func newSnapshotCmd(e *env) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			home, err := e.home()
+			if err != nil {
+				return err
+			}
 			if list {
-				files, err := snapshot.List(s)
+				files, err := snapshot.List(home, s)
 				if err != nil {
 					return err
 				}
@@ -47,7 +51,7 @@ func newSnapshotCmd(e *env) *cobra.Command {
 				}
 				return nil
 			}
-			p, err := snapshot.Create(s, e.runner, label)
+			p, err := snapshot.Create(home, s, e.runner, label)
 			if err != nil {
 				return err
 			}
@@ -68,6 +72,10 @@ func newSnapshotCmd(e *env) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			home, err := e.home()
+			if err != nil {
+				return err
+			}
 			prompt := fmt.Sprintf("Restore %s into %s? This drops database db. Type yes: ", args[0], s.Name)
 			if !strings.HasPrefix(filepath.Base(args[0]), s.Name+"-") {
 				prompt = fmt.Sprintf("WARNING: %s does not look like a snapshot of %s.\n", filepath.Base(args[0]), s.Name) + prompt
@@ -75,7 +83,7 @@ func newSnapshotCmd(e *env) *cobra.Command {
 			if !yes && !e.confirm(prompt) {
 				return errAborted
 			}
-			return snapshot.Restore(s, e.runner, args[0])
+			return snapshot.Restore(home, s, e.runner, args[0])
 		},
 	}
 	restore.Flags().BoolVar(&yes, "yes", false, "skip confirmation")

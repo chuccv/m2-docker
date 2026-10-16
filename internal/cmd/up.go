@@ -232,7 +232,7 @@ func (e *env) up(s site.Site, home string, skipMigrate bool) error {
 	}
 	e.connect(append(aliases, net, "md-router")...)
 	if s.SearchVersion != "" && !skipMigrate {
-		if err := migrate.EnsureSearchMigrated(s, e.runner); err != nil {
+		if err := migrate.EnsureSearchMigrated(home, s, e.runner); err != nil {
 			return err
 		}
 	}

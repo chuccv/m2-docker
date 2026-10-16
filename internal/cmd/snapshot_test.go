@@ -16,7 +16,8 @@ func writeSnapshot(t *testing.T, e *env, f *run.FakeRunner, root string) string 
 	if err := exec(t, e, "snapshot", "--label", "a"); err != nil {
 		t.Fatal(err)
 	}
-	p := filepath.Join(root, "ee249-qa", ".ddev", "md_snapshots", "ee249-qa-a.sql.gz")
+	home, _ := e.home()
+	p := filepath.Join(home, "sites", "ee249-qa", "snapshots", "ee249-qa-a.sql.gz")
 	if _, err := os.Stat(p); err != nil {
 		t.Fatal(err)
 	}
