@@ -30,6 +30,14 @@ func RenderNginxRun(ws []Website) []byte {
 	return []byte(b.String())
 }
 
+func RenderApacheRun(ws []Website) []byte {
+	var b strings.Builder
+	for _, w := range ws {
+		fmt.Fprintf(&b, "SetEnvIfNoCase Host \"^%s(:[0-9]+)?$\" MAGE_RUN_CODE=%s MAGE_RUN_TYPE=%s\n", strings.ReplaceAll(w.Host, ".", "[.]"), w.Code, w.Type)
+	}
+	return []byte(b.String())
+}
+
 func baseURL(host string, httpsPort int) string {
 	if httpsPort == 443 {
 		return "https://" + host + "/"

@@ -33,6 +33,10 @@ type rawConfig struct {
 	} `yaml:"database"`
 }
 
+func (s Site) IsApache() bool {
+	return s.Webserver == "apache-fpm"
+}
+
 func Load(root string) (Site, error) {
 	if HasMDConfig(root) {
 		return loadMD(root)

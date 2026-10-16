@@ -54,7 +54,6 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 					s.Root + ":/var/www/html",
 					nodeVol + ":/opt/node:ro",
 					p.Home + "/ca/rootCA.pem:/usr/local/share/ca-certificates/md.crt:ro",
-					p.Home + "/sites/" + s.Name + "/nginx-run.conf:/etc/nginx/md-run.conf:ro",
 				},
 				ExtraHosts: []string{"host.docker.internal:host-gateway"},
 				Labels:     managed,
@@ -74,6 +73,14 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 			dbVol:   {External: true},
 		},
 	}
+	web := f.Services["web"]
+	if s.IsApache() {
+		web.Volumes = append(web.Volumes, p.Home+"/sites/"+s.Name+"/apache-run.conf:/etc/apache2/md-run.conf:ro")
+		web.Environment = append(web.Environment, "MD_WEBSERVER=apache")
+	} else {
+		web.Volumes = append(web.Volumes, p.Home+"/sites/"+s.Name+"/nginx-run.conf:/etc/nginx/md-run.conf:ro")
+	}
+	f.Services["web"] = web
 	if p.ComposerAuth != "" {
 		web := f.Services["web"]
 		web.Volumes = append(web.Volumes, p.ComposerAuth+":/home/www/.composer/auth.json:ro")

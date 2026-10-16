@@ -120,7 +120,7 @@ func TestSitesView(t *testing.T) {
 		t.Fatalf("qa: %+v", qa)
 	}
 	ap := views["site-apache"]
-	if ap.Blocked != "" || !strings.Contains(ap.Note, "apache") || ap.Engine != "" || ap.Source != "ddev" {
+	if ap.Blocked != "" || ap.Note != "" || ap.Engine != "" || ap.Source != "ddev" {
 		t.Fatalf("apache: %+v", ap)
 	}
 	if qa.Engine != "md" {
