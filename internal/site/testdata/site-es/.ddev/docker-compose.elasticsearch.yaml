@@ -1,0 +1,11 @@
+services:
+  elasticsearch:
+    container_name: ddev-${DDEV_SITENAME}-elasticsearch
+    image: elasticsearch:7.17.14
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+
+volumes:
+  elasticsearch:

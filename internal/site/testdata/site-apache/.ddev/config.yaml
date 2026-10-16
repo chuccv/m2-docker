@@ -1,0 +1,10 @@
+name: site-apache
+type: magento2
+docroot: pub
+php_version: "8.2"
+webserver_type: apache-fpm
+additional_fqdns:
+    - local.example.test
+database:
+    type: mariadb
+    version: "10.6"

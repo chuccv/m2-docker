@@ -1,0 +1,10 @@
+services:
+  opensearch:
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx512m"
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+    healthcheck:
+      disable: true

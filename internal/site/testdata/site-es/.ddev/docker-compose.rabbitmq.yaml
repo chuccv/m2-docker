@@ -1,0 +1,9 @@
+services:
+  rabbitmq:
+    container_name: ddev-${DDEV_SITENAME}-rabbitmq
+    image: rabbitmq:3.12-management
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+
+volumes:
+  rabbitmq:

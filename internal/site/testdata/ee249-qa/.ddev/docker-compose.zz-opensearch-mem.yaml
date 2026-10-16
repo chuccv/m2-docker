@@ -1,0 +1,14 @@
+# -Xms sits below -Xmx on purpose: measured heap in use is ~200-320 MB, so committing
+# the full 512 MB at boot (the usual Xms=Xmx advice, meant to stop heap resizing on
+# production nodes) only parks RAM. A high ceiling costs nothing - it caps growth, it
+# does not reserve - so it stays generous. Sized for plain catalog search. This file was inherited from the EE249 project,
+# where 2g heap / 6g ceiling was needed for semantic vector search (ML Commons
+# holds the embedding model in native memory on top of the k-NN heap). This
+# project has no ML models registered at all, so that budget was pure waste.
+services:
+  opensearch:
+    mem_limit: 1500m
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx512m"
+  opensearch-dashboards:
+    mem_limit: 512m

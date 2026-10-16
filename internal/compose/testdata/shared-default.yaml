@@ -1,0 +1,86 @@
+services:
+  md-opensearch-3.0.0:
+    image: opensearchproject/opensearch:3.0.0
+    entrypoint:
+      - sh
+      - -c
+      - for p in analysis-icu analysis-phonetic; do ./bin/opensearch-plugin list | grep -qx $$p || ./bin/opensearch-plugin install --batch $$p; done; exec ./opensearch-docker-entrypoint.sh opensearch
+    container_name: md-opensearch-3.0.0
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - md-opensearch-3.0.0-data:/usr/share/opensearch/data
+      - md-opensearch-3.0.0-plugins:/usr/share/opensearch/plugins
+    networks:
+      - md
+  md-opensearch-latest:
+    image: opensearchproject/opensearch:latest
+    entrypoint:
+      - sh
+      - -c
+      - for p in analysis-icu analysis-phonetic; do ./bin/opensearch-plugin list | grep -qx $$p || ./bin/opensearch-plugin install --batch $$p; done; exec ./opensearch-docker-entrypoint.sh opensearch
+    container_name: md-opensearch-latest
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - md-opensearch-latest-data:/usr/share/opensearch/data
+      - md-opensearch-latest-plugins:/usr/share/opensearch/plugins
+    networks:
+      - md
+  md-router:
+    image: traefik:v3.3
+    container_name: md-router
+    restart: unless-stopped
+    command:
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.mailpit.address=:8025
+      - --entrypoints.mailpit-secure.address=:8026
+      - --entrypoints.xhgui.address=:8143
+      - --entrypoints.xhgui-secure.address=:8142
+    ports:
+      - 80:80
+      - 443:443
+      - 8025:8025
+      - 8026:8026
+      - 8143:8143
+      - 8142:8142
+    volumes:
+      - /home/neil/.md/router/dynamic:/etc/traefik/dynamic
+      - /home/neil/.md/certs:/certs:ro
+    networks:
+      - md
+  md-xhgui:
+    image: ddev/ddev-xhgui:v1.25.2
+    container_name: md-xhgui
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - chown www-data /data && nginx -g 'pid /dev/shm/nginx.pid;' && exec php-fpm
+    volumes:
+      - md-xhgui-data:/data
+      - /home/neil/.md/shared/xhgui-config.php:/var/www/xhgui/config/config.php:ro
+    extra_hosts:
+      - xhgui:127.0.0.1
+    networks:
+      - md
+networks:
+  md:
+    name: md
+volumes:
+  md-opensearch-3.0.0-data: {}
+  md-opensearch-3.0.0-plugins: {}
+  md-opensearch-latest-data: {}
+  md-opensearch-latest-plugins: {}
+  md-xhgui-data: {}

@@ -1,0 +1,8 @@
+name: site-es
+type: magento2
+docroot: pub
+php_version: "8.1"
+webserver_type: nginx-fpm
+database:
+    type: mariadb
+    version: "10.6"

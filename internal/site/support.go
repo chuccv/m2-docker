@@ -1,0 +1,26 @@
+package site
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+func Supported(s Site) error {
+	var errs []error
+	if s.Type != "magento2" {
+		errs = append(errs, fmt.Errorf("project type %q is not supported, only magento2", s.Type))
+	}
+	if s.DBType != "mariadb" {
+		errs = append(errs, fmt.Errorf("database %q: mysql chưa hỗ trợ ở V1, only mariadb", s.DBType))
+	}
+	if strings.HasPrefix(s.Webserver, "apache") {
+		errs = append(errs, fmt.Errorf("webserver %q (apache) is not supported, only nginx-fpm", s.Webserver))
+	}
+	for _, a := range []string{"elasticsearch", "varnish", "rabbitmq", "mutagen"} {
+		if contains(s.Addons, a) {
+			errs = append(errs, fmt.Errorf("addon %s is not supported", a))
+		}
+	}
+	return errors.Join(errs...)
+}

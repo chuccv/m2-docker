@@ -1,0 +1,42 @@
+services:
+  db:
+    image: mariadb:10.6
+    container_name: ddev-ee249-qa-db
+    restart: unless-stopped
+    user: 1000:1000
+    environment:
+      - MARIADB_USER=db
+      - MARIADB_PASSWORD=db
+      - MARIADB_DATABASE=db
+    volumes:
+      - ee249-qa-mariadb:/var/lib/mysql
+    labels:
+      com.md.managed: "true"
+  redis:
+    image: redis:7
+    container_name: ddev-ee249-qa-redis
+    restart: unless-stopped
+    volumes:
+      - ddev-ee249-qa_redis:/data
+    labels:
+      com.md.managed: "true"
+  web:
+    image: md/php:8.5
+    container_name: ddev-ee249-qa-web
+    restart: unless-stopped
+    user: 1000:1000
+    volumes:
+      - /var/www/html/ee249-qa:/var/www/html
+      - md-node-24:/opt/node:ro
+      - /home/neil/.md/ca/rootCA.pem:/usr/local/share/ca-certificates/md.crt:ro
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    labels:
+      com.md.managed: "true"
+volumes:
+  ddev-ee249-qa_redis:
+    external: true
+  ee249-qa-mariadb:
+    external: true
+  md-node-24:
+    external: true

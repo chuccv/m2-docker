@@ -1,0 +1,8 @@
+# Managed by chuccv/xhgui-extended — do not edit.
+# Bind-mount our collector config onto the path the built-in xhprof prepend
+# loads, so all uploads route to the xhgui-extended container instead of
+# the built-in xhgui container.
+services:
+  web:
+    volumes:
+      - ./xhgui-extended/collector/collector.config.php:/usr/local/xhgui.collector/xhgui.collector.config.php:ro

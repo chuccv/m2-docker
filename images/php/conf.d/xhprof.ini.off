@@ -1,0 +1,2 @@
+extension=xhprof
+auto_prepend_file=/usr/local/share/php-profiler/prepend.php
