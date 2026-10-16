@@ -66,3 +66,17 @@ func WriteSite(s site.Site, crt, key, home string, ports config.Ports) error {
 	}
 	return os.WriteFile(filepath.Join(dir, s.Name+".yaml"), RenderTraefikSite(s, crt, key, ports), 0o644)
 }
+
+func RenderDefaultCert(crt, key string) []byte {
+	doc := m{"tls": m{"stores": m{"default": m{"defaultCertificate": m{"certFile": crt, "keyFile": key}}}}}
+	out, _ := yaml.Marshal(doc)
+	return out
+}
+
+func WriteDefaultCert(crt, key, home string) error {
+	dir := filepath.Join(home, "router", "dynamic")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "_default.yaml"), RenderDefaultCert(crt, key), 0o644)
+}

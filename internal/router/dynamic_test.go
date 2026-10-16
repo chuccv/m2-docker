@@ -49,3 +49,30 @@ func TestWriteSite(t *testing.T) {
 		t.Fatal("content mismatch")
 	}
 }
+
+func TestRenderDefaultCert(t *testing.T) {
+	got := RenderDefaultCert("/certs/_default.crt", "/certs/_default.key")
+	path := filepath.Join("testdata", "default-cert.yaml")
+	if *update {
+		if err := os.WriteFile(path, got, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(want) != string(got) {
+		t.Fatalf("mismatch\n%s", got)
+	}
+}
+
+func TestWriteDefaultCert(t *testing.T) {
+	home := t.TempDir()
+	if err := WriteDefaultCert("/certs/_default.crt", "/certs/_default.key", home); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(home, "router", "dynamic", "_default.yaml")); err != nil {
+		t.Fatal(err)
+	}
+}

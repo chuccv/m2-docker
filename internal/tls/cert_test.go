@@ -101,3 +101,34 @@ func TestEnsureCertRegeneratesExpiring(t *testing.T) {
 		t.Fatalf("expected mkcert, calls %v", r.Calls)
 	}
 }
+
+func TestEnsureDefaultCert(t *testing.T) {
+	home := t.TempDir()
+	r := &run.FakeRunner{}
+	crt, key, err := EnsureDefaultCert(home, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if crt != filepath.Join(home, "certs", "_default.crt") || key != filepath.Join(home, "certs", "_default.key") {
+		t.Fatalf("paths %s %s", crt, key)
+	}
+	want := "mkcert -cert-file " + crt + " -key-file " + key + " *.ddev.site ddev.site"
+	if len(r.Calls) != 1 || strings.Join(r.Calls[0], " ") != want {
+		t.Fatalf("calls %v", r.Calls)
+	}
+}
+
+func TestEnsureDefaultCertSkipsValid(t *testing.T) {
+	home := t.TempDir()
+	old := s
+	s = site.Site{Name: "_default"}
+	writeCert(t, home, []string{"*.ddev.site", "ddev.site"}, time.Now().Add(90*24*time.Hour))
+	s = old
+	r := &run.FakeRunner{}
+	if _, _, err := EnsureDefaultCert(home, r); err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Calls) != 0 {
+		t.Fatalf("expected skip, calls %v", r.Calls)
+	}
+}

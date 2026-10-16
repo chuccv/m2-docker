@@ -261,3 +261,43 @@ func TestDdevActions(t *testing.T) {
 		t.Fatalf("md calls: %v", fa.calls)
 	}
 }
+
+func ddevCfg(t *testing.T, body string) string {
+	t.Helper()
+	p := filepath.Join(t.TempDir(), "global_config.yaml")
+	if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func TestDdevSiteLinksUseDdevPorts(t *testing.T) {
+	root, home := t.TempDir(), t.TempDir()
+	cfg := "name: %s\ntype: magento2\nphp_version: \"8.3\"\nwebserver_type: nginx-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"
+	writeSite(t, root, "busy", fmt.Sprintf(cfg, "busy"))
+	writeSite(t, root, "idle", fmt.Sprintf(cfg, "idle"))
+	writeSite(t, root, "mdstopped", fmt.Sprintf(cfg, "mdstopped"))
+	os.MkdirAll(filepath.Join(root, "mdstopped", ".md"), 0o755)
+	os.WriteFile(filepath.Join(root, "mdstopped", ".md", "config.yaml"), []byte("name: mdstopped\nphp: \"8.3\"\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"), 0o644)
+	os.WriteFile(filepath.Join(home, "config.yaml"), []byte("ports:\n  https: 9443\n"), 0o644)
+	old := ddevGlobalConfig
+	defer func() { ddevGlobalConfig = old }()
+	f := &run.FakeRunner{Out: map[string]string{"docker ps --format " + psFormat: "|ddev-busy\n"}}
+	for _, tc := range []struct{ cfg, base, mail, xh string }{
+		{filepath.Join(t.TempDir(), "missing.yaml"), "https://%s.ddev.site", "https://%s.ddev.site:8026", "https://%s.ddev.site:8142"},
+		{ddevCfg(t, "router_https_port: \"8443\"\nmailpit_https_port: \"9026\"\nxhgui_https_port: \"9142\"\n"), "https://%s.ddev.site:8443", "https://%s.ddev.site:9026", "https://%s.ddev.site:9142"},
+	} {
+		ddevGlobalConfig = tc.cfg
+		h := newServer(home, f, &fakeActions{}, []string{root})
+		views := decodeSites(t, do(h, "GET", "/api/sites", "", nil).Body.Bytes())
+		for _, n := range []string{"busy", "idle"} {
+			u := views[n].URLs
+			if u["storefront"] != fmt.Sprintf(tc.base, n) || u["admin"] != fmt.Sprintf(tc.base, n)+"/admin" || u["mailpit"] != fmt.Sprintf(tc.mail, n) || u["xhgui"] != fmt.Sprintf(tc.xh, n) {
+				t.Fatalf("%s: %v", n, u)
+			}
+		}
+		if u := views["mdstopped"].URLs; u["storefront"] != "https://mdstopped.ddev.site:9443" {
+			t.Fatalf("md source: %v", u)
+		}
+	}
+}

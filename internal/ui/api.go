@@ -4,8 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/chuccv/m2-docker/internal/clean"
 	"github.com/chuccv/m2-docker/internal/config"
@@ -73,6 +78,30 @@ func readState(home string) []struct{ Name, Root string } {
 	return out
 }
 
+var ddevGlobalConfig = filepath.Join(os.Getenv("HOME"), ".ddev", "global_config.yaml")
+
+func ddevPorts() config.Ports {
+	p := config.Ports{HTTPS: 443, MailpitHTTPS: 8026, XHGuiHTTPS: 8142}
+	data, err := os.ReadFile(ddevGlobalConfig)
+	if err != nil {
+		return p
+	}
+	var raw struct {
+		Router  string `yaml:"router_https_port"`
+		Mailpit string `yaml:"mailpit_https_port"`
+		XHGui   string `yaml:"xhgui_https_port"`
+	}
+	if yaml.Unmarshal(data, &raw) != nil {
+		return p
+	}
+	for dst, src := range map[*int]string{&p.HTTPS: raw.Router, &p.MailpitHTTPS: raw.Mailpit, &p.XHGuiHTTPS: raw.XHGui} {
+		if n, err := strconv.Atoi(src); err == nil && n > 0 {
+			*dst = n
+		}
+	}
+	return p
+}
+
 func hostURL(host string, port int) string {
 	if port == 443 {
 		return "https://" + host
@@ -116,10 +145,14 @@ func (s *server) siteViews() ([]SiteView, error) {
 		}
 		if len(x.Hostnames) > 0 {
 			h := x.Hostnames[0]
-			v.URLs["storefront"] = hostURL(h, cfg.Ports.HTTPS)
+			ports := cfg.Ports
+			if !running["md:"+x.Name] && v.Source != "md" {
+				ports = ddevPorts()
+			}
+			v.URLs["storefront"] = hostURL(h, ports.HTTPS)
 			v.URLs["admin"] = v.URLs["storefront"] + "/admin"
-			v.URLs["mailpit"] = fmt.Sprintf("https://%s:%d", h, cfg.Ports.MailpitHTTPS)
-			v.URLs["xhgui"] = fmt.Sprintf("https://%s:%d", h, cfg.Ports.XHGuiHTTPS)
+			v.URLs["mailpit"] = fmt.Sprintf("https://%s:%d", h, ports.MailpitHTTPS)
+			v.URLs["xhgui"] = fmt.Sprintf("https://%s:%d", h, ports.XHGuiHTTPS)
 		}
 		switch {
 		case running["md:"+x.Name]:

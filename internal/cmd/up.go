@@ -204,6 +204,13 @@ func (e *env) up(s site.Site, home string) error {
 	if err := e.runner.Stream("docker", "compose", "-p", "md-shared", "-f", sharedFile, "up", "-d"); err != nil {
 		return err
 	}
+	dcrt, dkey, err := tls.EnsureDefaultCert(home, e.runner)
+	if err != nil {
+		return err
+	}
+	if err := router.WriteDefaultCert("/certs/"+filepath.Base(dcrt), "/certs/"+filepath.Base(dkey), home); err != nil {
+		return err
+	}
 	crt, key, err := tls.EnsureCert(s, home, e.runner)
 	if err != nil {
 		return err
