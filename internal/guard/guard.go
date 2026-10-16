@@ -38,6 +38,9 @@ func CheckNoDDEV(r run.Runner, s site.Site, ports config.Ports) error {
 }
 
 func CheckDBVersion(r run.Runner, s site.Site) error {
+	if _, err := r.Run("docker", "volume", "inspect", s.Name+"-mariadb"); err != nil {
+		return fmt.Errorf("DB volume %s-mariadb not found", s.Name)
+	}
 	found := ""
 	for _, file := range []string{"db_mariadb_version.txt", "mysql_upgrade_info"} {
 		out, _ := r.Run("docker", "run", "--rm", "-u", "1000:1000", "--entrypoint", "cat",

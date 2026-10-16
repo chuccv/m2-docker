@@ -11,7 +11,10 @@ import (
 
 type Ports struct{ HTTP, HTTPS, MailpitHTTP, MailpitHTTPS, XHGuiHTTP, XHGuiHTTPS int }
 
-type Config struct{ Ports Ports }
+type Config struct {
+	Ports             Ports
+	BindAllInterfaces bool
+}
 
 type rawPorts struct {
 	HTTP         int `yaml:"http"`
@@ -33,11 +36,13 @@ func Load(home string) (Config, error) {
 		return c, fmt.Errorf("read %s: %w", path, err)
 	}
 	var raw struct {
-		Ports rawPorts `yaml:"ports"`
+		Ports             rawPorts `yaml:"ports"`
+		BindAllInterfaces bool     `yaml:"bind_all_interfaces"`
 	}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return c, fmt.Errorf("parse %s: %w", path, err)
 	}
+	c.BindAllInterfaces = raw.BindAllInterfaces
 	set := func(dst *int, v int) {
 		if v != 0 {
 			*dst = v

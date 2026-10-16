@@ -27,7 +27,12 @@ return [
 ];
 `
 
-func RenderShared(searchVersions []string, ports config.Ports, p Paths) ([]byte, error) {
+func RenderShared(searchVersions []string, cfg config.Config, p Paths) ([]byte, error) {
+	ports := cfg.Ports
+	bind := "127.0.0.1:"
+	if cfg.BindAllInterfaces {
+		bind = ""
+	}
 	entry := []struct {
 		name string
 		port int
@@ -46,7 +51,7 @@ func RenderShared(searchVersions []string, ports config.Ports, p Paths) ([]byte,
 	var portMaps []string
 	for _, e := range entry {
 		cmd = append(cmd, fmt.Sprintf("--entrypoints.%s.address=:%d", e.name, e.port))
-		portMaps = append(portMaps, fmt.Sprintf("%d:%d", e.port, e.port))
+		portMaps = append(portMaps, fmt.Sprintf("%s%d:%d", bind, e.port, e.port))
 	}
 
 	f := file{

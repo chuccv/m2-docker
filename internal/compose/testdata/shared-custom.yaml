@@ -49,12 +49,12 @@ services:
       - --entrypoints.xhgui.address=:9143
       - --entrypoints.xhgui-secure.address=:9142
     ports:
-      - 9080:9080
-      - 9443:9443
-      - 9025:9025
-      - 9026:9026
-      - 9143:9143
-      - 9142:9142
+      - 127.0.0.1:9080:9080
+      - 127.0.0.1:9443:9443
+      - 127.0.0.1:9025:9025
+      - 127.0.0.1:9026:9026
+      - 127.0.0.1:9143:9143
+      - 127.0.0.1:9142:9142
     volumes:
       - /home/neil/.md/router/dynamic:/etc/traefik/dynamic
       - /home/neil/.md/certs:/certs:ro

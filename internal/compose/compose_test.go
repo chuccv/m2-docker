@@ -69,7 +69,7 @@ func TestRenderSiteNoRedis(t *testing.T) {
 }
 
 func TestRenderSharedDefaultPorts(t *testing.T) {
-	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}, paths)
+	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestRenderSharedDefaultPorts(t *testing.T) {
 }
 
 func TestRenderSharedCustomPorts(t *testing.T) {
-	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Ports{HTTP: 9080, HTTPS: 9443, MailpitHTTP: 9025, MailpitHTTPS: 9026, XHGuiHTTP: 9143, XHGuiHTTPS: 9142}, paths)
+	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 9080, HTTPS: 9443, MailpitHTTP: 9025, MailpitHTTPS: 9026, XHGuiHTTP: 9143, XHGuiHTTPS: 9142}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestRenderSharedCustomPorts(t *testing.T) {
 }
 
 func TestSharedOpensearchDisablesSecurityAndInstallsPlugins(t *testing.T) {
-	out, err := RenderShared([]string{"latest"}, config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}, paths)
+	out, err := RenderShared([]string{"latest"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestSharedOpensearchDisablesSecurityAndInstallsPlugins(t *testing.T) {
 }
 
 func TestSharedXhguiResolvesItsOwnUpstream(t *testing.T) {
-	out, err := RenderShared(nil, config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}, paths)
+	out, err := RenderShared(nil, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,11 +107,25 @@ func TestSharedXhguiResolvesItsOwnUpstream(t *testing.T) {
 }
 
 func TestSharedHasNoBuildKey(t *testing.T) {
-	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}, paths)
+	out, err := RenderShared([]string{"latest", "3.0.0"}, config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}}, paths)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(string(out), "build:") || strings.Contains(string(out), "dockerfile_inline") {
 		t.Fatalf("build key rendered:\n%s", out)
+	}
+}
+
+func TestRenderSharedBindAllInterfaces(t *testing.T) {
+	cfg := config.Config{Ports: config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142}, BindAllInterfaces: true}
+	out, err := RenderShared(nil, cfg, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(out), "127.0.0.1:") && !strings.Contains(string(out), "xhgui:127.0.0.1") || strings.Contains(string(out), "127.0.0.1:80") {
+		t.Fatalf("loopback bind with BindAllInterfaces:\n%s", out)
+	}
+	if !strings.Contains(string(out), "- 80:80") {
+		t.Fatalf("missing all-interface port:\n%s", out)
 	}
 }

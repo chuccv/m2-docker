@@ -189,7 +189,7 @@ func (e *env) up(s site.Site, home string, skipMigrate bool) error {
 			return err
 		}
 	}
-	shared, err := compose.RenderShared(st.SearchVersions, cfg.Ports, paths)
+	shared, err := compose.RenderShared(st.SearchVersions, cfg, paths)
 	if err != nil {
 		return err
 	}

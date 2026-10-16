@@ -1,6 +1,7 @@
 package guard
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -138,4 +139,17 @@ func hasCall(r *run.FakeRunner, key string) bool {
 		}
 	}
 	return false
+}
+
+func TestCheckDBVersionMissingVolumeDoesNotRunDocker(t *testing.T) {
+	r := &run.FakeRunner{Err: map[string]error{"docker volume inspect ee249-qa-mariadb": errors.New("no such volume")}}
+	err := CheckDBVersion(r, qa(t))
+	if err == nil || !strings.Contains(err.Error(), "DB volume ee249-qa-mariadb not found") {
+		t.Fatalf("got %v", err)
+	}
+	for _, c := range r.Calls {
+		if c[1] == "run" {
+			t.Fatalf("docker run executed: %v", c)
+		}
+	}
 }

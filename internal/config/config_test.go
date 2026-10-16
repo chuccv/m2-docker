@@ -66,3 +66,18 @@ func TestHome(t *testing.T) {
 		t.Fatalf("got %q %v", h, err)
 	}
 }
+
+func TestBindAllInterfaces(t *testing.T) {
+	c, err := Load(t.TempDir())
+	if err != nil || c.BindAllInterfaces {
+		t.Fatalf("default: %+v %v", c, err)
+	}
+	d := t.TempDir()
+	if err := os.WriteFile(filepath.Join(d, "config.yaml"), []byte("bind_all_interfaces: true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c, err = Load(d)
+	if err != nil || !c.BindAllInterfaces {
+		t.Fatalf("set: %+v %v", c, err)
+	}
+}
