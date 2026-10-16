@@ -56,3 +56,49 @@ func TestApplyNeverDeletesDB(t *testing.T) {
 		t.Fatalf("calls %v", r.Calls)
 	}
 }
+
+func TestPlanSkipsProtectedVolumesAndXhguiImage(t *testing.T) {
+	r := fake()
+	r.Out["docker volume ls -f dangling=true -q"] = "md-opensearch-latest-data\nmd-opensearch-latest-plugins\nmd-node-22\nmd-xhgui-data\nddev-ee249-ln_redis\nx-mariadb\nsome-other-volume\n"
+	r.Out["docker images --format {{.Repository}}:{{.Tag}}\t{{.Size}}"] = "ddev/ddev-xhgui:v1.25.2\t50MB\nddev/ddev-dbserver:v1\t300MB\n"
+	items, err := Plan(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range items {
+		if it.Kind == "volume" && it.Name != "some-other-volume" {
+			t.Fatalf("protected volume planned: %v", it)
+		}
+		if it.Name == "ddev/ddev-xhgui:v1.25.2" {
+			t.Fatalf("xhgui image planned")
+		}
+	}
+	var vols int
+	for _, it := range items {
+		if it.Kind == "volume" {
+			vols++
+		}
+	}
+	if vols != 1 {
+		t.Fatalf("got %v", items)
+	}
+}
+
+func TestApplyNeverDeletesProtected(t *testing.T) {
+	r := &run.FakeRunner{}
+	err := Apply([]Item{
+		{"volume", "md-opensearch-latest-data", ""},
+		{"volume", "md-node-22", ""},
+		{"volume", "ddev-ee249-ln_redis", ""},
+		{"volume", "x-mariadb", ""},
+		{"image", "ddev/ddev-xhgui:v1.25.2", ""},
+		{"volume", "some-other-volume", ""},
+	}, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := [][]string{{"docker", "volume", "rm", "some-other-volume"}}
+	if !reflect.DeepEqual(r.Calls, want) {
+		t.Fatalf("calls %v", r.Calls)
+	}
+}

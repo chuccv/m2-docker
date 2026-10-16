@@ -26,6 +26,15 @@ func split(l string) (string, string) {
 	return n, sz
 }
 
+const xhguiImage = "ddev/ddev-xhgui:v1.25.2"
+
+func protectedVolume(v string) bool {
+	if strings.HasPrefix(v, "md-") || strings.HasSuffix(v, "-mariadb") {
+		return true
+	}
+	return strings.HasPrefix(v, "ddev-") && strings.HasSuffix(v, "_redis")
+}
+
 func Plan(r run.Runner, sites []site.Site) ([]Item, error) {
 	var items []Item
 
@@ -52,7 +61,7 @@ func Plan(r run.Runner, sites []site.Site) ([]Item, error) {
 	}
 	for _, l := range lines(out) {
 		n, sz := split(l)
-		if strings.HasPrefix(n, "ddev/") && !inUse[n] {
+		if strings.HasPrefix(n, "ddev/") && n != xhguiImage && !inUse[n] {
 			items = append(items, Item{"image", n, sz})
 		}
 	}
@@ -82,6 +91,7 @@ func Plan(r run.Runner, sites []site.Site) ([]Item, error) {
 		case known[v]:
 		case strings.HasSuffix(v, "-mariadb"):
 			orphans = append(orphans, Item{"db-orphan", v, ""})
+		case protectedVolume(v):
 		default:
 			items = append(items, Item{"volume", v, ""})
 		}
@@ -94,11 +104,14 @@ func Apply(items []Item, r run.Runner) error {
 		var args []string
 		switch it.Kind {
 		case "image":
+			if it.Name == xhguiImage {
+				continue
+			}
 			args = []string{"rmi", it.Name}
 		case "buildcache":
 			args = []string{"builder", "prune", "-f"}
 		case "volume":
-			if strings.HasSuffix(it.Name, "-mariadb") {
+			if protectedVolume(it.Name) {
 				continue
 			}
 			args = []string{"volume", "rm", it.Name}
