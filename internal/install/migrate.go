@@ -10,6 +10,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/migrate"
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/website"
 )
 
 func IsBlank(root string) (bool, error) {
@@ -88,6 +89,7 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	if err != nil {
 		return err
 	}
+	warnDDEVNginx(root)
 	if err := up(s); err != nil {
 		return err
 	}
@@ -96,5 +98,15 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 			return err
 		}
 	}
-	return lockBaseURL(s, r, baseURL(s.Hostnames[0], ports.HTTPS))
+	_, err = website.Sync(s, s.Websites, r, ports.HTTPS)
+	return err
+}
+
+func warnDDEVNginx(root string) {
+	for _, g := range []string{"nginx_full", "nginx"} {
+		if m, _ := filepath.Glob(filepath.Join(root, ".ddev", g, "*.conf")); len(m) > 0 {
+			fmt.Fprintln(os.Stderr, "warning: nginx custom của DDEV không được dùng; khai báo websites trong .md/config.yaml")
+			return
+		}
+	}
 }

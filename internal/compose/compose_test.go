@@ -145,3 +145,13 @@ func TestRenderSiteComposerAuth(t *testing.T) {
 		t.Fatal("auth mounted without file")
 	}
 }
+
+func TestRenderSiteMountsNginxRun(t *testing.T) {
+	out, err := RenderSite(loadSite(t, "ee249-qa"), paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "/home/neil/.md/sites/ee249-qa/nginx-run.conf:/etc/nginx/md-run.conf:ro") {
+		t.Fatalf("got %s", out)
+	}
+}

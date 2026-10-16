@@ -15,6 +15,7 @@ type Site struct {
 	Hostnames                                                               []string
 	SearchVersion                                                           string
 	Addons                                                                  []string
+	Websites                                                                []Website
 }
 
 type rawConfig struct {

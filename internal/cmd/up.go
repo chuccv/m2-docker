@@ -19,6 +19,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/router"
 	"github.com/chuccv/m2-docker/internal/site"
 	"github.com/chuccv/m2-docker/internal/tls"
+	"github.com/chuccv/m2-docker/internal/website"
 )
 
 func imageHash() (string, error) {
@@ -218,6 +219,9 @@ func (e *env) up(s site.Site, home string) error {
 	if err := writeFile(file, body); err != nil {
 		return err
 	}
+	if err := writeFile(filepath.Join(filepath.Dir(file), "nginx-run.conf"), website.RenderNginxRun(s.Websites)); err != nil {
+		return err
+	}
 	if err := e.runner.Stream("docker", "compose", "-p", "md-"+s.Name, "-f", file, "up", "-d", "--wait"); err != nil {
 		return err
 	}
@@ -234,10 +238,24 @@ func (e *env) up(s site.Site, home string) error {
 		aliases = append(aliases, "--alias", h)
 	}
 	e.connect(append(aliases, net, "md-router")...)
+	if err := e.syncWebsites(s, cfg.Ports.HTTPS); err != nil {
+		fmt.Fprintf(e.writer(), "warning: websites sync: %v\n", err)
+	}
 	for _, h := range s.Hostnames {
 		fmt.Fprintln(e.writer(), siteURL(h, cfg.Ports.HTTPS))
 	}
 	return nil
+}
+
+func (e *env) syncWebsites(s site.Site, httpsPort int) error {
+	if !site.HasMDConfig(s.Root) {
+		return nil
+	}
+	if _, err := os.Stat(filepath.Join(s.Root, "app", "etc", "env.php")); err != nil {
+		return nil
+	}
+	_, err := website.Sync(s, s.Websites, e.runner, httpsPort)
+	return err
 }
 
 func siteURL(host string, httpsPort int) string {

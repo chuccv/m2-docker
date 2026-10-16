@@ -9,6 +9,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Website struct {
+	Host string `yaml:"host"`
+	Code string `yaml:"code"`
+	Type string `yaml:"type"`
+}
+
 type MDConfig struct {
 	Name     string `yaml:"name"`
 	Type     string `yaml:"type"`
@@ -17,10 +23,11 @@ type MDConfig struct {
 		Type    string `yaml:"type"`
 		Version string `yaml:"version"`
 	} `yaml:"database"`
-	Search    string   `yaml:"search"`
-	Node      string   `yaml:"node"`
-	Redis     bool     `yaml:"redis"`
-	Hostnames []string `yaml:"hostnames"`
+	Search    string    `yaml:"search"`
+	Node      string    `yaml:"node"`
+	Redis     bool      `yaml:"redis"`
+	Hostnames []string  `yaml:"hostnames"`
+	Websites  []Website `yaml:"websites"`
 	Magento   struct {
 		Version string `yaml:"version"`
 		Edition string `yaml:"edition"`
@@ -69,6 +76,21 @@ func loadMD(root string) (Site, error) {
 	if c.Node == "" {
 		c.Node = "22"
 	}
+	hostnames := []string{c.Name + ".ddev.site"}
+	for _, h := range c.Hostnames {
+		hostnames = appendUnique(hostnames, h)
+	}
+	for i, w := range c.Websites {
+		if w.Host == "" || w.Code == "" {
+			return Site{}, fmt.Errorf("%s: websites[%d] needs host and code", mdConfigPath(root), i)
+		}
+		if w.Type == "" {
+			c.Websites[i].Type = "website"
+		} else if w.Type != "website" && w.Type != "store" {
+			return Site{}, fmt.Errorf("%s: websites[%d] type must be website or store, got %q", mdConfigPath(root), i, w.Type)
+		}
+		hostnames = appendUnique(hostnames, w.Host)
+	}
 	s := Site{
 		Name:          c.Name,
 		Root:          root,
@@ -78,11 +100,19 @@ func loadMD(root string) (Site, error) {
 		DBVersion:     c.Database.Version,
 		NodeVersion:   c.Node,
 		Webserver:     "nginx-fpm",
-		Hostnames:     append([]string{c.Name + ".ddev.site"}, c.Hostnames...),
+		Hostnames:     hostnames,
+		Websites:      c.Websites,
 		SearchVersion: c.Search,
 	}
 	if c.Redis {
 		s.Addons = []string{"redis"}
 	}
 	return s, nil
+}
+
+func appendUnique(l []string, v string) []string {
+	if contains(l, v) {
+		return l
+	}
+	return append(l, v)
 }

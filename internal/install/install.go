@@ -13,6 +13,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/migrate"
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/m2-docker/internal/website"
 )
 
 type Options struct {
@@ -73,15 +74,6 @@ func stream(r run.Runner, name string, cmd ...string) error {
 
 func magento(r run.Runner, name string, args ...string) error {
 	return stream(r, name, append([]string{"php", "bin/magento"}, args...)...)
-}
-
-func lockBaseURL(s site.Site, r run.Runner, url string) error {
-	for _, path := range []string{"web/unsecure/base_url", "web/secure/base_url"} {
-		if err := magento(r, s.Name, "config:set", "--lock-env", path, url); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func disableTwoFactor(s site.Site, r run.Runner) error {
@@ -198,7 +190,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) error {
 	if err != nil {
 		return err
 	}
-	if err := lockBaseURL(s, r, url); err != nil {
+	if _, err := website.Sync(s, s.Websites, r, ports.HTTPS); err != nil {
 		return err
 	}
 	if o.SampleData {
