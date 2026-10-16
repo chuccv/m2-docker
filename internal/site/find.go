@@ -29,7 +29,7 @@ func findByCwd(cwd string) (Site, error) {
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return Site{}, fmt.Errorf("no .ddev/config.yaml found from %s upward", cwd)
+			return Site{}, fmt.Errorf("no .md/config.yaml or .ddev/config.yaml found from %s upward", cwd)
 		}
 		dir = parent
 	}
@@ -61,5 +61,5 @@ func scan(dir, name string, depth int) (Site, bool) {
 
 func hasConfig(dir string) bool {
 	_, err := os.Stat(filepath.Join(dir, ".ddev", "config.yaml"))
-	return err == nil
+	return err == nil || HasMDConfig(dir)
 }

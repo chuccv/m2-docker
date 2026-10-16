@@ -33,6 +33,9 @@ type rawConfig struct {
 }
 
 func Load(root string) (Site, error) {
+	if HasMDConfig(root) {
+		return loadMD(root)
+	}
 	ddev := filepath.Join(root, ".ddev")
 	data, err := os.ReadFile(filepath.Join(ddev, "config.yaml"))
 	if err != nil {
@@ -43,7 +46,7 @@ func Load(root string) (Site, error) {
 		return Site{}, fmt.Errorf("parse %s: %w", filepath.Join(ddev, "config.yaml"), err)
 	}
 	if c.Name == "" {
-		c.Name = filepath.Base(root)
+		c.Name = NormalizeName(filepath.Base(root))
 	}
 	s := Site{
 		Name:        c.Name,

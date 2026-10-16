@@ -41,6 +41,14 @@ func CheckDBVersion(r run.Runner, s site.Site) error {
 	if _, err := r.Run("docker", "volume", "inspect", s.Name+"-mariadb"); err != nil {
 		return fmt.Errorf("DB volume %s-mariadb not found", s.Name)
 	}
+	want := versionRe.FindString(s.DBVersion)
+	label, _ := r.Run("docker", "volume", "inspect", "-f", `{{index .Labels "com.md.db"}}`, s.Name+"-mariadb")
+	if v := versionRe.FindString(label); v != "" {
+		if v != want {
+			return fmt.Errorf("DB volume %s-mariadb is %s but config wants %s", s.Name, v, s.DBVersion)
+		}
+		return nil
+	}
 	found := ""
 	for _, file := range []string{"db_mariadb_version.txt", "mysql_upgrade_info"} {
 		out, _ := r.Run("docker", "run", "--rm", "-u", "1000:1000", "--entrypoint", "cat",
@@ -53,13 +61,16 @@ func CheckDBVersion(r run.Runner, s site.Site) error {
 	if found == "" {
 		return fmt.Errorf("DB version in volume %s-mariadb cannot be determined", s.Name)
 	}
-	if want := versionRe.FindString(s.DBVersion); found != want {
+	if found != want {
 		return fmt.Errorf("DB volume %s-mariadb is %s but config wants %s", s.Name, found, s.DBVersion)
 	}
 	return nil
 }
 
 func CheckExtraCompose(s site.Site) error {
+	if site.HasMDConfig(s.Root) {
+		return nil
+	}
 	files, _ := filepath.Glob(filepath.Join(s.Root, ".ddev", "docker-compose.*.yaml"))
 	for _, f := range files {
 		base := filepath.Base(f)

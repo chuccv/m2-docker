@@ -153,3 +153,45 @@ func TestCheckDBVersionMissingVolumeDoesNotRunDocker(t *testing.T) {
 		}
 	}
 }
+
+func labelKey() string {
+	return "docker volume inspect -f {{index .Labels \"com.md.db\"}} ee249-qa-mariadb"
+}
+
+func TestCheckDBVersionLabel(t *testing.T) {
+	r := &run.FakeRunner{Out: map[string]string{labelKey(): "mariadb_10.6\n"}}
+	if err := CheckDBVersion(r, qa(t)); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range r.Calls {
+		if c[1] == "run" {
+			t.Fatalf("docker run executed: %v", c)
+		}
+	}
+}
+
+func TestCheckDBVersionLabelMismatch(t *testing.T) {
+	r := &run.FakeRunner{Out: map[string]string{labelKey(): "mariadb_10.11\n"}}
+	err := CheckDBVersion(r, qa(t))
+	if err == nil || !strings.Contains(err.Error(), "10.11") || !strings.Contains(err.Error(), "10.6") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestCheckDBVersionEmptyLabelFallsBack(t *testing.T) {
+	r := &run.FakeRunner{Out: map[string]string{labelKey(): "\n", versionKey("db_mariadb_version.txt"): "mariadb_10.6\n"}}
+	if err := CheckDBVersion(r, qa(t)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCheckExtraComposeMDConfig(t *testing.T) {
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, ".ddev"), 0o755)
+	os.MkdirAll(filepath.Join(root, ".md"), 0o755)
+	os.WriteFile(filepath.Join(root, ".ddev", "docker-compose.solr.yaml"), nil, 0o644)
+	os.WriteFile(filepath.Join(root, ".md", "config.yaml"), []byte("name: x\n"), 0o644)
+	if err := CheckExtraCompose(site.Site{Root: root}); err != nil {
+		t.Fatal(err)
+	}
+}

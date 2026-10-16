@@ -127,7 +127,7 @@ func TestUpGuardFailNoCompose(t *testing.T) {
 		t.Fatal("expected guard error")
 	}
 	for _, c := range calls(f) {
-		if c == "docker volume inspect ee249-qa-mariadb" {
+		if strings.HasPrefix(c, "docker volume inspect ") {
 			continue
 		}
 		if strings.HasPrefix(c, "docker compose") || strings.HasPrefix(c, "docker build") || strings.HasPrefix(c, "docker volume") || strings.HasPrefix(c, "docker image") {
