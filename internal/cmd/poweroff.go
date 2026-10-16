@@ -31,39 +31,43 @@ func (e *env) runningProjects() (map[string]bool, error) {
 	return running, nil
 }
 
+func (e *env) poweroff() error {
+	home, err := e.home()
+	if err != nil {
+		return err
+	}
+	st, err := loadState(home)
+	if err != nil {
+		return err
+	}
+	running, err := e.runningProjects()
+	if err != nil {
+		return err
+	}
+	var errs []error
+	for _, s := range st.Sites {
+		if !running["md-"+s.Name] {
+			continue
+		}
+		if err := e.stopSite(home, s.Name, st.SearchVersions); err != nil {
+			errs = append(errs, fmt.Errorf("stop %s: %w", s.Name, err))
+		}
+	}
+	if running["md-shared"] {
+		if err := e.runner.Stream("docker", "compose", "-p", "md-shared", "-f", filepath.Join(home, "shared", "compose.yaml"), "down"); err != nil {
+			errs = append(errs, fmt.Errorf("stop shared: %w", err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
 func newPoweroffCmd(e *env) *cobra.Command {
 	return &cobra.Command{
 		Use:   "poweroff",
 		Short: "Stop every running site and the shared stack",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			home, err := e.home()
-			if err != nil {
-				return err
-			}
-			st, err := loadState(home)
-			if err != nil {
-				return err
-			}
-			running, err := e.runningProjects()
-			if err != nil {
-				return err
-			}
-			var errs []error
-			for _, s := range st.Sites {
-				if !running["md-"+s.Name] {
-					continue
-				}
-				if err := e.stopSite(home, s.Name, st.SearchVersions); err != nil {
-					errs = append(errs, fmt.Errorf("stop %s: %w", s.Name, err))
-				}
-			}
-			if running["md-shared"] {
-				if err := e.runner.Stream("docker", "compose", "-p", "md-shared", "-f", filepath.Join(home, "shared", "compose.yaml"), "down"); err != nil {
-					errs = append(errs, fmt.Errorf("stop shared: %w", err))
-				}
-			}
-			return errors.Join(errs...)
+			return e.poweroff()
 		},
 	}
 }
