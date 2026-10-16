@@ -114,7 +114,11 @@ func (e *env) ensureNodeVolume(nodeVersion string) error {
 	if _, err := e.runner.Run("docker", "volume", "create", vol); err != nil {
 		return err
 	}
-	return e.runner.Stream("docker", "run", "--rm", "-v", vol+":/out", "node:"+major+"-slim", "cp", "-a", "/usr/local/.", "/out/")
+	if err := e.runner.Stream("docker", "run", "--rm", "-v", vol+":/out", "node:"+major+"-slim", "cp", "-a", "/usr/local/.", "/out/"); err != nil {
+		e.runner.Run("docker", "volume", "rm", vol)
+		return err
+	}
+	return nil
 }
 
 func (e *env) ensureCA(home string) error {
@@ -180,9 +184,6 @@ func (e *env) up(s site.Site, home string, skipMigrate bool) error {
 		return err
 	}
 	st.add(siteRef{Name: s.Name, Root: s.Root}, s.SearchVersion)
-	if err := saveState(home, st); err != nil {
-		return err
-	}
 	paths := compose.Paths{Home: home, Root: s.Root}
 	for _, d := range []string{"certs", "router/dynamic"} {
 		if err := os.MkdirAll(filepath.Join(home, d), 0o755); err != nil {
@@ -219,6 +220,9 @@ func (e *env) up(s site.Site, home string, skipMigrate bool) error {
 		return err
 	}
 	if err := e.runner.Stream("docker", "compose", "-p", "md-"+s.Name, "-f", file, "up", "-d", "--wait"); err != nil {
+		return err
+	}
+	if err := saveState(home, st); err != nil {
 		return err
 	}
 	net := "md-" + s.Name + "_default"

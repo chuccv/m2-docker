@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -299,5 +300,31 @@ func TestUpWithoutSkipMigrateRunsMigrate(t *testing.T) {
 	}
 	if index(calls(f), "config:set") < 0 {
 		t.Fatalf("migrate did not run:\n%s", strings.Join(calls(f), "\n"))
+	}
+}
+
+func TestUpNodePopulateFailureRemovesVolume(t *testing.T) {
+	e, f, _ := upEnv(t)
+	f.Err[volKey] = errors.New("no such volume")
+	cp := "docker run --rm -v md-node-22:/out node:22-slim cp -a /usr/local/. /out/"
+	f.Err[cp] = errors.New("cp failed")
+	err := exec(t, e, "up")
+	if err == nil || !strings.Contains(err.Error(), "cp failed") {
+		t.Fatalf("got %v", err)
+	}
+	if !hasPrefixCall(calls(f), "docker volume rm md-node-22") {
+		t.Fatalf("volume not removed:\n%s", strings.Join(calls(f), "\n"))
+	}
+}
+
+func TestUpComposeFailureLeavesStateUntouched(t *testing.T) {
+	e, f, home := upEnv(t)
+	f.Err[strings.Replace(siteUpFmt, "%s", home, 1)] = errors.New("compose boom")
+	if err := exec(t, e, "up"); err == nil {
+		t.Fatal("want error")
+	}
+	st, _ := os.ReadFile(filepath.Join(home, "state.json"))
+	if strings.Contains(string(st), "ee249-qa") {
+		t.Fatalf("state has site: %s", st)
 	}
 }
