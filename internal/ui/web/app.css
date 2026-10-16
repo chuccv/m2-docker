@@ -37,3 +37,5 @@ td.actions{display:flex;gap:4px;align-items:center}
 pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;margin:0 0 8px}
 pre:empty{display:none}
 @media (max-width:640px){main{padding:8px}th,td{padding:6px}}
+#offline{margin:12px 16px 0;padding:8px 12px;border-radius:6px;background:var(--danger);color:#fff}
+#offline code{background:rgba(255,255,255,.2);padding:1px 4px;border-radius:4px}

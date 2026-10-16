@@ -104,7 +104,7 @@ func TestSitesView(t *testing.T) {
 	writeSite(t, root, "site-apache", "name: site-apache\ntype: magento2\nphp_version: \"8.3\"\nwebserver_type: apache-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n")
 	writeSite(t, root, "busy", "name: busy\ntype: magento2\nphp_version: \"8.3\"\nwebserver_type: nginx-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n")
 	os.WriteFile(filepath.Join(home, "config.yaml"), []byte("ports:\n  https: 9443\n"), 0o644)
-	f := &run.FakeRunner{Out: map[string]string{"docker ps --format {{.Names}}": "ddev-busy-web\nddev-busy-db\nmd-router\n"}}
+	f := &run.FakeRunner{Out: map[string]string{"docker ps --format " + psFormat: "|ddev-busy\ntrue|md-ee249-qa\n|md-shared\n"}}
 	h := newServer(home, f, &fakeActions{}, []string{root})
 	r := do(h, "GET", "/api/sites", "", nil)
 	if r.Code != 200 {
@@ -115,7 +115,7 @@ func TestSitesView(t *testing.T) {
 	if qa.URLs["storefront"] != "https://ee249-qa.ddev.site:9443" || qa.URLs["admin"] != "https://ee249-qa.ddev.site:9443/admin" || qa.URLs["mailpit"] != "https://ee249-qa.ddev.site:8026" || qa.URLs["xhgui"] != "https://ee249-qa.ddev.site:8142" {
 		t.Fatalf("urls: %v", qa.URLs)
 	}
-	if qa.Status != "stopped" || qa.Blocked != "" || qa.PHP != "8.5" {
+	if qa.Status != "running" || qa.Blocked != "" || qa.PHP != "8.5" {
 		t.Fatalf("qa: %+v", qa)
 	}
 	if !strings.Contains(views["site-apache"].Blocked, "apache") {

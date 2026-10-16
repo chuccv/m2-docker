@@ -26,11 +26,20 @@
       opts.body = JSON.stringify(body || {});
     }
     return fetch(path, opts).then(function (r) {
+      setOffline(false);
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (!r.ok) throw new Error(j.error || r.statusText);
         return j;
       });
+    }, function (e) {
+      setOffline(true);
+      e.offline = true;
+      throw e;
     });
+  }
+
+  function setOffline(v) {
+    $("offline").hidden = !v;
   }
 
   function el(tag, cls, text) {
@@ -57,7 +66,7 @@
     busy[name] = action;
     render();
     api("POST", "/api/sites/" + encodeURIComponent(name) + "/" + action)
-      .catch(function (e) { showMsg(name + " " + action + ": " + e.message); })
+      .catch(function (e) { if (!e.offline) showMsg(name + " " + action + ": " + e.message); })
       .then(function () { delete busy[name]; refreshSites(); });
   }
 
@@ -109,7 +118,7 @@
   }
 
   function refreshSites() {
-    return api("GET", "/api/sites").then(function (s) { sites = s; render(); }).catch(function (e) { showMsg(e.message); });
+    return api("GET", "/api/sites").then(function (s) { sites = s; render(); }).catch(function (e) { if (!e.offline) showMsg(e.message); });
   }
 
   function refreshStats() {
@@ -134,7 +143,7 @@
       fill("volumes", d.volumes.map(function (v) {
         return [{ t: v.name }, { t: v.site || "-" }, { t: v.size, num: 1 }];
       }));
-    }).catch(function (e) { showMsg(e.message); });
+    }).catch(function (e) { if (!e.offline) showMsg(e.message); });
   }
 
   function showTab(name) {
@@ -147,7 +156,7 @@
 
   $("poweroff").onclick = function () {
     if (!window.confirm("Stop every running site and the shared stack?")) return;
-    api("POST", "/api/poweroff").catch(function (e) { showMsg("poweroff: " + e.message); }).then(refreshSites);
+    api("POST", "/api/poweroff").catch(function (e) { if (!e.offline) showMsg("poweroff: " + e.message); }).then(refreshSites);
   };
 
   $("plan").onclick = function () {
@@ -159,7 +168,7 @@
       }
       $("plan-out").textContent = lines.length ? lines.join("\n") : "";
       if (!p.items.length) showMsg("Nothing to clean");
-    }).catch(function (e) { showMsg(e.message); });
+    }).catch(function (e) { if (!e.offline) showMsg(e.message); });
   };
 
   $("clean").onclick = function () {
@@ -170,11 +179,11 @@
       $("plan-out").textContent = "";
       showMsg("");
       refreshDisk();
-    }).catch(function (e) { showMsg("clean: " + e.message); });
+    }).catch(function (e) { if (!e.offline) showMsg("clean: " + e.message); });
   };
 
   refreshSites();
   refreshStats();
   setInterval(refreshStats, 3000);
-  setInterval(refreshSites, 15000);
+  setInterval(refreshSites, 5000);
 })();

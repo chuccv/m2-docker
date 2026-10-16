@@ -78,23 +78,23 @@ func hostURL(host string, port int) string {
 	return fmt.Sprintf("https://%s:%d", host, port)
 }
 
-func (s *server) containers() []string {
-	out, err := s.r.Run("docker", "ps", "--format", "{{.Names}}")
-	if err != nil {
-		return nil
-	}
-	return strings.Fields(out)
-}
+const psFormat = `{{.Label "com.md.managed"}}|{{.Label "com.docker.compose.project"}}`
 
-func hasContainerOf(names []string, prefix, site string) bool {
-	for _, n := range names {
-		if rest, ok := strings.CutPrefix(n, prefix); ok {
-			if name, isSite := siteOf(prefix+rest, []string{site}); isSite && name == site {
-				return true
-			}
+func (s *server) projects() map[string]bool {
+	out, err := s.r.Run("docker", "ps", "--format", psFormat)
+	set := map[string]bool{}
+	if err != nil {
+		return set
+	}
+	for _, l := range strings.Fields(out) {
+		managed, project, _ := strings.Cut(l, "|")
+		if managed == "true" && strings.HasPrefix(project, "md-") {
+			set["md:"+strings.TrimPrefix(project, "md-")] = true
+		} else if strings.HasPrefix(project, "ddev-") {
+			set["ddev:"+strings.TrimPrefix(project, "ddev-")] = true
 		}
 	}
-	return false
+	return set
 }
 
 func (s *server) siteViews() ([]SiteView, error) {
@@ -102,7 +102,7 @@ func (s *server) siteViews() ([]SiteView, error) {
 	if err != nil {
 		return nil, err
 	}
-	names := s.containers()
+	running := s.projects()
 	views := []SiteView{}
 	for _, x := range s.discover() {
 		v := SiteView{Name: x.Name, Root: x.Root, Source: "ddev", Status: "stopped", PHP: x.PHPVersion, Search: x.SearchVersion, URLs: map[string]string{}}
@@ -120,9 +120,9 @@ func (s *server) siteViews() ([]SiteView, error) {
 			v.URLs["xhgui"] = fmt.Sprintf("https://%s:%d", h, cfg.Ports.XHGuiHTTPS)
 		}
 		switch {
-		case hasContainerOf(names, "md-", x.Name):
+		case running["md:"+x.Name]:
 			v.Status = "running"
-		case hasContainerOf(names, "ddev-", x.Name):
+		case running["ddev:"+x.Name]:
 			v.Status = "ddev"
 		}
 		if err := site.Supported(x); err != nil {
