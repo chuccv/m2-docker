@@ -375,18 +375,14 @@ func TestMigrateNoEnvPhpNoBackupNoHint(t *testing.T) {
 	}
 }
 
-func TestMigrateNotesMutagen(t *testing.T) {
+func TestMigrateKeepsMutagenAddonForUp(t *testing.T) {
 	fx := msetup(t)
 	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.mutagen.yaml"), []byte("x"), 0o644)
-	var buf strings.Builder
-	old := stderr
-	stderr = &buf
-	defer func() { stderr = old }()
 	if _, err := fx.migrate(); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(buf.String(), "mutagen bỏ qua trên Linux") {
-		t.Fatalf("stderr %q", buf.String())
+	if len(fx.upSites) != 1 || !fx.upSites[0].HasAddon("mutagen") {
+		t.Fatalf("%+v", fx.upSites)
 	}
 }
 

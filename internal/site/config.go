@@ -135,16 +135,3 @@ func contains(l []string, v string) bool {
 	}
 	return false
 }
-
-func ddevMutagen(root string) bool {
-	ddev := filepath.Join(root, ".ddev")
-	if _, err := os.Stat(filepath.Join(ddev, "docker-compose.mutagen.yaml")); err == nil {
-		return true
-	}
-	data, err := os.ReadFile(filepath.Join(ddev, "config.yaml"))
-	if err != nil {
-		return false
-	}
-	var c rawConfig
-	return yaml.Unmarshal(data, &c) == nil && c.PerformanceMode == "mutagen"
-}

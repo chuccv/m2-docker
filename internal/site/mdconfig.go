@@ -149,9 +149,6 @@ func loadMD(root string) (Site, error) {
 	if c.Redis {
 		s.Addons = []string{"redis"}
 	}
-	if ddevMutagen(root) {
-		s.Addons = append(s.Addons, "mutagen")
-	}
 	if s.SearchEngine == "elasticsearch" && s.SearchVersion == "" {
 		s.SearchVersion = DefaultElasticsearch
 	}

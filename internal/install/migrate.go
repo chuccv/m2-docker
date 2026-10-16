@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -13,8 +12,6 @@ import (
 	"github.com/chuccv/m2-docker/internal/site"
 	"github.com/chuccv/m2-docker/internal/stack"
 )
-
-var stderr io.Writer = os.Stderr
 
 func IsBlank(root string) (bool, error) {
 	entries, err := os.ReadDir(root)
@@ -65,9 +62,7 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	if err := site.Supported(s); err != nil {
 		return err
 	}
-	if s.HasAddon("mutagen") {
-		fmt.Fprintln(stderr, "mutagen bỏ qua trên Linux")
-	}
+	mutagen := s.HasAddon("mutagen")
 	if err := guard.CheckNoDDEV(r, s, ports); err != nil {
 		return err
 	}
@@ -110,6 +105,9 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	s, err = site.Load(root)
 	if err != nil {
 		return err
+	}
+	if mutagen {
+		s.Addons = append(s.Addons, "mutagen")
 	}
 	warnDDEVNginx(root)
 	if data, rerr := os.ReadFile(envPath); rerr == nil {

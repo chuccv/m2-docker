@@ -206,14 +206,13 @@ func TestLoadMDElasticsearchDefaultVersion(t *testing.T) {
 	}
 }
 
-func TestLoadMDSeesLeftoverDDEVMutagen(t *testing.T) {
+func TestLoadMDIgnoresStrayDDEVMutagen(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "php: \"8.3\"\n")
-	if s, _ := Load(dir); s.HasAddon("mutagen") {
-		t.Fatal("mutagen without ddev")
-	}
+	writeFile(t, filepath.Join(dir, ".ddev", "docker-compose.mutagen.yaml"), "")
 	writeFile(t, filepath.Join(dir, ".ddev", "config.yaml"), "name: a\nperformance_mode: mutagen\n")
-	if s, _ := Load(dir); !s.HasAddon("mutagen") {
-		t.Fatal("mutagen not detected")
+	s, err := Load(dir)
+	if err != nil || s.HasAddon("mutagen") {
+		t.Fatalf("%v %+v", err, s)
 	}
 }

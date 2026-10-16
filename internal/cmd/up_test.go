@@ -423,16 +423,13 @@ func TestUpConnectsElasticsearchAlias(t *testing.T) {
 	}
 }
 
-func TestUpNotesMutagen(t *testing.T) {
+func TestMigrateCmdNotesMutagenOnce(t *testing.T) {
 	e, _, _, dir := ddevEnv(t)
-	cfg := "name: ee249-qa\ntype: magento2\nphp: \"8.5\"\nnode: \"22.11.0\"\ndatabase:\n  type: mariadb\n  version: \"11.4\"\n"
-	os.MkdirAll(filepath.Join(dir, ".md"), 0o755)
-	os.WriteFile(filepath.Join(dir, ".md", "config.yaml"), []byte(cfg), 0o644)
-	os.WriteFile(filepath.Join(dir, ".ddev", "config.yaml"), []byte(siteCfg+"performance_mode: mutagen\n"), 0o644)
-	if err := exec(t, e, "up"); err != nil {
+	os.WriteFile(filepath.Join(dir, ".ddev", "docker-compose.mutagen.yaml"), []byte("x"), 0o644)
+	if err := exec(t, e, "migrate"); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(e.out.(*strings.Builder).String(), "mutagen bỏ qua trên Linux") {
-		t.Fatalf("out %q", e.out.(*strings.Builder).String())
+	if n := strings.Count(e.out.(*strings.Builder).String(), "mutagen bỏ qua trên Linux"); n != 1 {
+		t.Fatalf("note printed %d times", n)
 	}
 }
