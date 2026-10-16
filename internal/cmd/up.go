@@ -162,6 +162,9 @@ func (e *env) up(s site.Site, home string) error {
 	if err := site.Supported(s); err != nil {
 		return err
 	}
+	if s.HasAddon("mutagen") {
+		fmt.Fprintln(e.writer(), "mutagen bỏ qua trên Linux")
+	}
 	if err := guard.CheckNoDDEV(e.runner, s, cfg.Ports); err != nil {
 		return err
 	}

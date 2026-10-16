@@ -196,3 +196,24 @@ func TestLoadMDPhpMyAdmin(t *testing.T) {
 		t.Fatalf("%v %+v", err, s)
 	}
 }
+
+func TestLoadMDElasticsearchDefaultVersion(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "search_engine: elasticsearch\n")
+	s, err := Load(dir)
+	if err != nil || s.SearchVersion != "7.17.14" || s.SearchKey() != "elasticsearch:7.17.14" {
+		t.Fatalf("%v %+v", err, s)
+	}
+}
+
+func TestLoadMDSeesLeftoverDDEVMutagen(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "php: \"8.3\"\n")
+	if s, _ := Load(dir); s.HasAddon("mutagen") {
+		t.Fatal("mutagen without ddev")
+	}
+	writeFile(t, filepath.Join(dir, ".ddev", "config.yaml"), "name: a\nperformance_mode: mutagen\n")
+	if s, _ := Load(dir); !s.HasAddon("mutagen") {
+		t.Fatal("mutagen not detected")
+	}
+}
