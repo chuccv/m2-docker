@@ -8,7 +8,7 @@ import (
 )
 
 func TestNormalizeName(t *testing.T) {
-	for in, want := range map[string]string{"EE249": "ee249", "demo_store": "demo-store", "zhik_m2": "zhik-m2", "ee249-qa": "ee249-qa"} {
+	for in, want := range map[string]string{"EE249": "ee249", "demo_store": "demo-store", "shop_b2c": "shop-b2c", "ee249-qa": "ee249-qa"} {
 		if got := NormalizeName(in); got != want {
 			t.Fatalf("%q: got %q want %q", in, got, want)
 		}
@@ -65,13 +65,13 @@ func TestLoadMDFixture(t *testing.T) {
 }
 
 func TestLoadDDEVEmptyNameNormalized(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "Zhik_M2")
+	dir := filepath.Join(t.TempDir(), "Shop_B2C")
 	writeFile(t, filepath.Join(dir, ".ddev", "config.yaml"), "type: magento2\n")
 	s, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.Name != "zhik-m2" {
+	if s.Name != "shop-b2c" {
 		t.Fatalf("got %q", s.Name)
 	}
 }
