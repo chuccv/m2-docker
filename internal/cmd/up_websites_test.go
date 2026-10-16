@@ -92,3 +92,37 @@ func TestUpNoSyncForDDEVSite(t *testing.T) {
 		t.Fatal("sync ran for ddev site")
 	}
 }
+
+const reloadCall = "docker exec ddev-ee249-qa-web nginx -s reload"
+
+func TestUpReloadsNginxWhenRunConfChanged(t *testing.T) {
+	e, f, home := upEnv(t)
+	p := filepath.Join(home, "sites", "ee249-qa", "nginx-run.conf")
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte("old"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	cs := calls(f)
+	r := index(cs, reloadCall)
+	if r < 0 || r < index(cs, "docker compose -p md-ee249-qa") {
+		t.Fatalf("reload missing or early:\n%s", strings.Join(cs, "\n"))
+	}
+}
+
+func TestUpNoReloadWhenRunConfUnchanged(t *testing.T) {
+	e, f, _ := upEnv(t)
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	if index(calls(f), reloadCall) >= 0 {
+		t.Fatal("reload ran")
+	}
+}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -226,7 +227,11 @@ func (e *env) up(s site.Site, home string) error {
 	if err := writeFile(file, body); err != nil {
 		return err
 	}
-	if err := writeFile(filepath.Join(filepath.Dir(file), "nginx-run.conf"), website.RenderNginxRun(s.Websites)); err != nil {
+	runConf := filepath.Join(filepath.Dir(file), "nginx-run.conf")
+	runBody := website.RenderNginxRun(s.Websites)
+	prev, perr := os.ReadFile(runConf)
+	runChanged := perr == nil && !bytes.Equal(prev, runBody)
+	if err := writeFile(runConf, runBody); err != nil {
 		return err
 	}
 	if err := e.runner.Stream("docker", "compose", "-p", "md-"+s.Name, "-f", file, "up", "-d", "--wait"); err != nil {
@@ -234,6 +239,11 @@ func (e *env) up(s site.Site, home string) error {
 	}
 	if err := saveState(home, st); err != nil {
 		return err
+	}
+	if runChanged {
+		if _, err := e.runner.Run("docker", "exec", "ddev-"+s.Name+"-web", "nginx", "-s", "reload"); err != nil {
+			fmt.Fprintf(e.writer(), "warning: nginx reload: %v\n", err)
+		}
 	}
 	net := "md-" + s.Name + "_default"
 	if s.SearchVersion != "" {
