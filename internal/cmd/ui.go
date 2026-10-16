@@ -3,18 +3,41 @@ package cmd
 import (
 	"fmt"
 	osexec "os/exec"
+	"sync"
 
 	"github.com/spf13/cobra"
 
 	"github.com/chuccv/m2-docker/internal/ui"
 )
 
-type uiActions struct{ e *env }
+type uiActions struct {
+	e  *env
+	mu *sync.Mutex
+}
 
-func (a uiActions) Up(name string) error   { return a.e.upByName(name) }
-func (a uiActions) Stop(name string) error { return a.e.stopByName(name) }
-func (a uiActions) Poweroff() error        { return a.e.poweroff() }
+func newUIActions(e *env) uiActions { return uiActions{e: e, mu: &sync.Mutex{}} }
+
+func (a uiActions) Up(name string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.e.upByName(name)
+}
+
+func (a uiActions) Stop(name string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.e.stopByName(name)
+}
+
+func (a uiActions) Poweroff() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.e.poweroff()
+}
+
 func (a uiActions) Restart(name string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	if err := a.e.stopByName(name); err != nil {
 		return err
 	}
@@ -42,7 +65,7 @@ func newUICmd(e *env) *cobra.Command {
 			if p, err := osexec.LookPath("xdg-open"); err == nil {
 				osexec.Command(p, url).Start()
 			}
-			return ui.Serve(l, ui.NewServer(home, e.runner, uiActions{e}))
+			return ui.Serve(l, ui.NewServer(home, e.runner, newUIActions(e)))
 		},
 	}
 	cmd.Flags().StringVar(&addr, "addr", "127.0.0.1", "listen address (loopback only)")
