@@ -80,3 +80,16 @@ func TestEnsureSearchMigratedElasticsearchPrefix(t *testing.T) {
 		t.Fatalf("%v", f.Calls[0])
 	}
 }
+
+func TestEnsureSearchMigratedElasticsearch8Prefix(t *testing.T) {
+	s := newSite(t)
+	s.SearchEngine = "elasticsearch"
+	s.SearchVersion = "8.11.4"
+	f := &run.FakeRunner{}
+	if err := EnsureSearchMigrated(t.TempDir(), s, f); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(strings.Join(f.Calls[0], " "), "catalog/search/elasticsearch8_index_prefix ee249_qa") {
+		t.Fatalf("%v", f.Calls[0])
+	}
+}

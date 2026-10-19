@@ -23,6 +23,9 @@ func EnsureSearchMigrated(home string, s site.Site, r run.Runner) error {
 	prefixPath := "catalog/search/opensearch_index_prefix"
 	if s.SearchEngine == "elasticsearch" {
 		prefixPath = "catalog/search/elasticsearch7_index_prefix"
+		if strings.HasPrefix(s.SearchVersion, "8") {
+			prefixPath = "catalog/search/elasticsearch8_index_prefix"
+		}
 	}
 	steps := []struct {
 		label string
