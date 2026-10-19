@@ -20,6 +20,28 @@ func toggleScript(ext string, on bool) string {
 	return fmt.Sprintf("[ -e %s ] || exit 0; mv %s %s && pkill -USR2 -o php-fpm", from, from, to)
 }
 
+func (e *env) toggle(name, ext string, on bool) error {
+	s, err := e.findSite(name)
+	if err != nil {
+		return err
+	}
+	if err := e.runner.Stream("docker", "exec", "-u", containerUID, "ddev-"+s.Name+"-web", "sh", "-c", toggleScript(ext, on)); err != nil {
+		return err
+	}
+	if ext == "xhprof" && on {
+		home, err := e.home()
+		if err != nil {
+			return err
+		}
+		cfg, err := config.Load(home)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(e.out, "https://%s:%d\n", s.Hostnames[0], cfg.Ports.XHGuiHTTPS)
+	}
+	return nil
+}
+
 func newToggleCmd(e *env, ext string) *cobra.Command {
 	return &cobra.Command{
 		Use:       ext + " on|off",
@@ -27,26 +49,7 @@ func newToggleCmd(e *env, ext string) *cobra.Command {
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		ValidArgs: []string{"on", "off"},
 		RunE: func(c *cobra.Command, args []string) error {
-			on := args[0] == "on"
-			s, err := e.findSite("")
-			if err != nil {
-				return err
-			}
-			if err := e.runner.Stream("docker", "exec", "-u", containerUID, "ddev-"+s.Name+"-web", "sh", "-c", toggleScript(ext, on)); err != nil {
-				return err
-			}
-			if ext == "xhprof" && on {
-				home, err := e.home()
-				if err != nil {
-					return err
-				}
-				cfg, err := config.Load(home)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintf(e.out, "https://%s:%d\n", s.Hostnames[0], cfg.Ports.XHGuiHTTPS)
-			}
-			return nil
+			return e.toggle("", ext, args[0] == "on")
 		},
 	}
 }
