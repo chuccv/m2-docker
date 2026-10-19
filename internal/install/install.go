@@ -18,12 +18,13 @@ import (
 )
 
 type Options struct {
-	Root, Version, Edition               string
-	PHP, DB, Search                      string
-	SampleData                           bool
-	AdminUser, AdminPassword, AdminEmail string
-	Up                                   func(site.Site) error
-	Out                                  io.Writer
+	Root, Version, Edition                string
+	PHP, DB, DBType, Search, SearchEngine string
+	Varnish                               bool
+	SampleData                            bool
+	AdminUser, AdminPassword, AdminEmail  string
+	Up                                    func(site.Site) error
+	Out                                   io.Writer
 }
 
 const webRoot = "/var/www/html"
@@ -101,6 +102,17 @@ func disableTwoFactor(s site.Site, r run.Runner) error {
 	return magento(r, s.Name, "setup:upgrade")
 }
 
+func searchArgs(engine, version, prefix string) []string {
+	if engine == "elasticsearch" {
+		kind := "elasticsearch7"
+		if strings.HasPrefix(version, "8") {
+			kind = "elasticsearch8"
+		}
+		return []string{"--search-engine=" + kind, "--elasticsearch-host=elasticsearch", "--elasticsearch-port=9200", "--elasticsearch-index-prefix=" + prefix}
+	}
+	return []string{"--search-engine=opensearch", "--opensearch-host=opensearch", "--opensearch-port=9200", "--opensearch-index-prefix=" + prefix}
+}
+
 func Install(o Options, r run.Runner, home string, ports config.Ports) (err error) {
 	root, err := filepath.Abs(o.Root)
 	if err != nil {
@@ -125,34 +137,46 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 	if !validPassword(o.AdminPassword) {
 		return fmt.Errorf("admin password must be at least 7 characters with letters and digits")
 	}
-	st, err := StackFor(o.Version)
+	st, err := StackFor(home, o.Version)
 	if err != nil {
 		return err
+	}
+	if o.SearchEngine != "" && o.SearchEngine != st.Search.Engine && o.Search == "" {
+		return fmt.Errorf("--search-engine %s needs --search <version>", o.SearchEngine)
 	}
 	for _, ov := range []struct {
 		dst *string
 		v   string
-	}{{&st.PHP, o.PHP}, {&st.DB, o.DB}, {&st.Search, o.Search}} {
+	}{{&st.PHP, o.PHP}, {&st.Database.Version, o.DB}, {&st.Database.Type, o.DBType}, {&st.Search.Version, o.Search}, {&st.Search.Engine, o.SearchEngine}} {
 		if ov.v != "" {
 			*ov.dst = ov.v
 		}
+	}
+	if st.Database.Type != "mariadb" && st.Database.Type != "mysql" {
+		return fmt.Errorf("invalid database type %q: use mariadb or mysql", st.Database.Type)
+	}
+	if st.Search.Engine != "opensearch" && st.Search.Engine != "elasticsearch" {
+		return fmt.Errorf("invalid search engine %q: use opensearch or elasticsearch", st.Search.Engine)
 	}
 	if compose.ComposerAuth() == "" {
 		return fmt.Errorf("composer auth.json not found: put Magento keys in $COMPOSER_HOME/auth.json or ~/.composer/auth.json")
 	}
 	name := site.NormalizeName(filepath.Base(root))
-	vol := name + "-mariadb"
+	cfg := site.MDConfig{Name: name, Type: "magento2", PHP: st.PHP, Search: st.Search.Version, SearchEngine: st.Search.Engine, Node: st.Node, Redis: true, RedisVersion: st.Redis}
+	if o.Varnish {
+		cfg.Varnish = site.VarnishSpec(st.Varnish)
+	}
+	cfg.Database.Type = st.Database.Type
+	cfg.Database.Version = st.Database.Version
+	cfg.Magento.Version = o.Version
+	cfg.Magento.Edition = o.Edition
+	vol := site.Site{Name: name, DBType: cfg.Database.Type}.DBVolume()
 	if _, verr := r.Run("docker", "volume", "inspect", vol); verr == nil {
 		return fmt.Errorf("volume DB %s đã tồn tại — có thể là DB của site khác", vol)
 	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return err
 	}
-	cfg := site.MDConfig{Name: name, Type: "magento2", PHP: st.PHP, Search: st.Search, Node: st.Node, Redis: true}
-	cfg.Database.Type = "mariadb"
-	cfg.Database.Version = st.DB
-	cfg.Magento.Version = o.Version
-	cfg.Magento.Edition = o.Edition
 	mdDir := filepath.Join(root, ".md")
 	mdDirExisted := exists(mdDir)
 	upRan, volCreated := false, false
@@ -166,8 +190,8 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 		}
 		if upRan && exists(stack.ComposeFile(home, name)) {
 			var versions []string
-			if cfg.Search != "" {
-				versions = []string{cfg.Search}
+			if key := (site.Site{SearchVersion: cfg.Search, SearchEngine: cfg.SearchEngine}).SearchKey(); key != "" {
+				versions = []string{key}
 			}
 			if derr := stack.Down(r, home, name, versions); derr != nil {
 				err = fmt.Errorf("%w; compose down: %v", err, derr)
@@ -180,7 +204,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 	if err := site.WriteMDConfig(root, cfg); err != nil {
 		return err
 	}
-	if _, err := r.Run("docker", "volume", "create", "--label", "com.md.db=mariadb_"+st.DB, vol); err != nil {
+	if _, err := r.Run("docker", "volume", "create", "--label", "com.md.db="+st.Database.Type+"_"+st.Database.Version, vol); err != nil {
 		return err
 	}
 	volCreated = true
@@ -206,16 +230,17 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 		return err
 	}
 	url := baseURL(name+".ddev.site", ports.HTTPS)
-	err = magento(r, name, "setup:install",
-		"--base-url="+url, "--base-url-secure="+url, "--use-secure=1", "--use-secure-admin=1",
-		"--db-host=db", "--db-name=db", "--db-user=db", "--db-password=db",
-		"--search-engine=opensearch", "--opensearch-host=opensearch", "--opensearch-port=9200", "--opensearch-index-prefix="+migrate.Prefix(name),
+	args := []string{"setup:install",
+		"--base-url=" + url, "--base-url-secure=" + url, "--use-secure=1", "--use-secure-admin=1",
+		"--db-host=db", "--db-name=db", "--db-user=db", "--db-password=db"}
+	args = append(args, searchArgs(st.Search.Engine, st.Search.Version, migrate.Prefix(name))...)
+	args = append(args,
 		"--session-save=redis", "--session-save-redis-host=redis", "--session-save-redis-db=2",
 		"--cache-backend=redis", "--cache-backend-redis-server=redis", "--cache-backend-redis-db=0",
 		"--page-cache=redis", "--page-cache-redis-server=redis", "--page-cache-redis-db=1",
 		"--backend-frontname=admin", "--admin-user="+o.AdminUser, "--admin-password="+o.AdminPassword, "--admin-email="+o.AdminEmail,
 		"--admin-firstname=Admin", "--admin-lastname=User", "--language=en_US", "--currency=USD", "--timezone=UTC", "--use-rewrites=1")
-	if err != nil {
+	if err = magento(r, name, args...); err != nil {
 		return err
 	}
 	if _, err := website.Sync(s, s.Websites, r, ports.HTTPS); err != nil {

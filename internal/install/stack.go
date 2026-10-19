@@ -1,29 +1,77 @@
 package install
 
 import (
+	_ "embed"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
-type Stack struct{ PHP, DB, Search, Node string }
-
-var versionRe = regexp.MustCompile(`^2\.4\.(\d+)(-p\d+)?$`)
-
-var stacks = map[string]Stack{
-	"9": {"8.5", "11.4", "3.0.0", "22"},
-	"8": {"8.4", "11.4", "2.19.1", "22"},
-	"7": {"8.3", "10.6", "2.12.0", "22"},
-	"6": {"8.2", "10.6", "2.5.0", "22"},
-	"5": {"8.1", "10.4", "1.2.4", "22"},
-	"4": {"8.1", "10.4", "1.2.4", "22"},
+type Stack struct {
+	PHP      string `yaml:"php"`
+	Database struct {
+		Type    string `yaml:"type"`
+		Version string `yaml:"version"`
+	} `yaml:"database"`
+	Search struct {
+		Engine  string `yaml:"engine"`
+		Version string `yaml:"version"`
+	} `yaml:"search"`
+	Redis   string `yaml:"redis"`
+	Varnish string `yaml:"varnish"`
+	Node    string `yaml:"node"`
 }
 
-func StackFor(magentoVersion string) (Stack, error) {
-	m := versionRe.FindStringSubmatch(magentoVersion)
-	if m != nil {
-		if s, ok := stacks[m[1]]; ok {
+//go:embed stacks.yaml
+var embeddedStacks []byte
+
+var versionRe = regexp.MustCompile(`^(2\.4\.\d+)(-p\d+)?$`)
+
+func loadStacks(home string) (map[string]Stack, error) {
+	all := map[string]Stack{}
+	if err := yaml.Unmarshal(embeddedStacks, &all); err != nil {
+		return nil, fmt.Errorf("embedded stacks.yaml: %w", err)
+	}
+	path := filepath.Join(home, "stacks.yaml")
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return all, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	user := map[string]Stack{}
+	if err := yaml.Unmarshal(data, &user); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+	for k, v := range user {
+		all[k] = v
+	}
+	return all, nil
+}
+
+func StackFor(home, magentoVersion string) (Stack, error) {
+	all, err := loadStacks(home)
+	if err != nil {
+		return Stack{}, err
+	}
+	if s, ok := all[magentoVersion]; ok {
+		return s, nil
+	}
+	if m := versionRe.FindStringSubmatch(magentoVersion); m != nil {
+		if s, ok := all[m[1]]; ok {
 			return s, nil
 		}
 	}
-	return Stack{}, fmt.Errorf("unsupported Magento version %q (supported: 2.4.4 - 2.4.9)", magentoVersion)
+	keys := make([]string, 0, len(all))
+	for k := range all {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return Stack{}, fmt.Errorf("unsupported Magento version %q (supported: %s)", magentoVersion, strings.Join(keys, ", "))
 }

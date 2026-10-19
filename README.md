@@ -59,6 +59,22 @@ Every tool except `sites_list` takes the site name as `site`. Output is capped a
 
 There are no tools for `clean`, `poweroff`, `install` or `migrate`.
 
+## Install stacks
+
+`md install [dir] --version 2.4.8` picks PHP, database, search, Redis, Varnish and Node from `stacks.yaml`, keyed by Magento version line. An exact key such as `"2.4.7-p5"` overrides its line. Defaults are embedded in the binary (`internal/install/stacks.yaml`); an entry in `~/.md/stacks.yaml` replaces the embedded one with the same key, and new keys are added. A missing file is fine, a malformed one is an error.
+
+```yaml
+"2.4.8":
+  php: "8.4"
+  database: {type: mariadb, version: "11.4"}
+  search: {engine: opensearch, version: "2.19.1"}
+  redis: "7.2"
+  varnish: "7.6"
+  node: "22"
+```
+
+Flags override the stack: `--php`, `--db`, `--db-type mariadb|mysql`, `--search`, `--search-engine opensearch|elasticsearch` (needs `--search <version>`), and `--varnish` (off by default, uses the stack's Varnish version). The choices are written to `.md/config.yaml`, and `setup:install` gets the matching search flags (`opensearch`, `elasticsearch7` or `elasticsearch8`).
+
 ## Supported
 
 - Web server: nginx-fpm or apache-fpm, PHP 8.1 to 8.5

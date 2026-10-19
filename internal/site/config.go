@@ -14,7 +14,7 @@ import (
 type Site struct {
 	Name, Root, Type, PHPVersion, DBType, DBVersion, NodeVersion, Webserver string
 	Hostnames                                                               []string
-	SearchVersion, SearchEngine, Varnish                                    string
+	SearchVersion, SearchEngine, Varnish, RedisVersion                      string
 	PhpMyAdmin                                                              bool
 	Addons                                                                  []string
 	Websites                                                                []Website

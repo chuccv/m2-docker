@@ -1,0 +1,42 @@
+"2.4.4":
+  php: "8.1"
+  database: {type: mariadb, version: "10.4"}
+  search: {engine: opensearch, version: "1.2.4"}
+  redis: "6.2"
+  varnish: "7.0"
+  node: "22"
+"2.4.5":
+  php: "8.1"
+  database: {type: mariadb, version: "10.4"}
+  search: {engine: opensearch, version: "1.2.4"}
+  redis: "6.2"
+  varnish: "7.0"
+  node: "22"
+"2.4.6":
+  php: "8.2"
+  database: {type: mariadb, version: "10.6"}
+  search: {engine: opensearch, version: "2.5.0"}
+  redis: "7.0"
+  varnish: "7.3"
+  node: "22"
+"2.4.7":
+  php: "8.3"
+  database: {type: mariadb, version: "10.6"}
+  search: {engine: opensearch, version: "2.12.0"}
+  redis: "7.2"
+  varnish: "7.4"
+  node: "22"
+"2.4.8":
+  php: "8.4"
+  database: {type: mariadb, version: "11.4"}
+  search: {engine: opensearch, version: "2.19.1"}
+  redis: "7.2"
+  varnish: "7.6"
+  node: "22"
+"2.4.9":
+  php: "8.5"
+  database: {type: mariadb, version: "11.4"}
+  search: {engine: opensearch, version: "3.0.0"}
+  redis: "7.2"
+  varnish: "7.6"
+  node: "22"

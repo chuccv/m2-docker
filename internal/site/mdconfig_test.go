@@ -256,3 +256,15 @@ func TestLoadMDIgnoresStrayDDEVMutagen(t *testing.T) {
 		t.Fatalf("%v %+v", err, s)
 	}
 }
+
+func TestLoadMDRedisVersion(t *testing.T) {
+	root := t.TempDir()
+	c := MDConfig{Name: "a", PHP: "8.4", Redis: true, RedisVersion: "7.2"}
+	if err := WriteMDConfig(root, c); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Load(root)
+	if err != nil || s.RedisVersion != "7.2" {
+		t.Fatalf("%+v %v", s, err)
+	}
+}
