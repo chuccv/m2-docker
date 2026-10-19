@@ -79,7 +79,12 @@ func TestSupported(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	if err := Supported(load(t, "ee249-qa")); err != nil {
+	qa := load(t, "ee249-qa")
+	if err := Supported(qa); err == nil || !strings.Contains(err.Error(), "latest") {
+		t.Fatalf("latest: %v", err)
+	}
+	qa.SearchVersion = "2.19.1"
+	if err := Supported(qa); err != nil {
 		t.Fatal(err)
 	}
 	for _, a := range []string{"rabbitmq"} {

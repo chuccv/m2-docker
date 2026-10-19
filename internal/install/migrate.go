@@ -1,6 +1,7 @@
 package install
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -62,6 +63,11 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, ignoreC
 	s, err := site.Load(root)
 	if err != nil {
 		return err
+	}
+	if s.SearchVersion == "latest" {
+		if s.SearchVersion, err = pinnedSearch(home, root, s.SearchEngine); err != nil {
+			return err
+		}
 	}
 	if err := site.Supported(s); err != nil {
 		return err
@@ -151,4 +157,38 @@ func warnDDEVNginx(root string) {
 			return
 		}
 	}
+}
+
+func pinnedSearch(home, root, engine string) (string, error) {
+	v, err := MagentoVersion(root)
+	if err != nil {
+		return "", fmt.Errorf("search version is \"latest\" and the Magento version is unknown (%v): set OPENSEARCH_TAG in .ddev", err)
+	}
+	st, err := StackFor(home, v)
+	if err != nil {
+		return "", err
+	}
+	if st.Search.Engine != engine && engine != "" {
+		return "", fmt.Errorf("search version is \"latest\" and stack %s uses %s, not %s: set the version in .ddev", v, st.Search.Engine, engine)
+	}
+	return st.Search.Version, nil
+}
+
+func MagentoVersion(root string) (string, error) {
+	data, err := os.ReadFile(filepath.Join(root, "composer.lock"))
+	if err != nil {
+		return "", err
+	}
+	var lock struct {
+		Packages []struct{ Name, Version string }
+	}
+	if err := json.Unmarshal(data, &lock); err != nil {
+		return "", err
+	}
+	for _, p := range lock.Packages {
+		if p.Name == "magento/product-community-edition" || p.Name == "magento/product-enterprise-edition" {
+			return p.Version, nil
+		}
+	}
+	return "", fmt.Errorf("magento/product-*-edition not in composer.lock")
 }

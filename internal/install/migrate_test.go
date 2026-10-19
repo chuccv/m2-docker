@@ -45,6 +45,7 @@ func msetup(t *testing.T) *mfixture {
 	os.WriteFile(filepath.Join(ddev, "config.yaml"), []byte(cfg), 0o644)
 	os.WriteFile(filepath.Join(ddev, "docker-compose.opensearch.yaml"), []byte("x"), 0o644)
 	os.WriteFile(filepath.Join(ddev, "docker-compose.redis.yaml"), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(root, "composer.lock"), []byte(`{"packages":[{"name":"magento/product-community-edition","version":"2.4.8-p1"}]}`), 0o644)
 	fx := &mfixture{root: root, home: t.TempDir(), f: &run.FakeRunner{Out: map[string]string{}, Err: map[string]error{}}, ports: config.Ports{HTTP: 80, HTTPS: 443}}
 	fx.f.Out[mVolLabel] = "mariadb_11.4"
 	return fx
@@ -125,7 +126,7 @@ func TestMigrateOrder(t *testing.T) {
 	if !site.HasMDConfig(fx.root) {
 		t.Fatal("md config missing")
 	}
-	if len(fx.upSites) != 1 || !fx.upSawMD || fx.upSites[0].Name != "mig" || fx.upSites[0].SearchVersion != "latest" {
+	if len(fx.upSites) != 1 || !fx.upSawMD || fx.upSites[0].Name != "mig" || fx.upSites[0].SearchVersion != "2.19.1" {
 		t.Fatalf("up %+v md=%v", fx.upSites, fx.upSawMD)
 	}
 	order := []string{
@@ -174,6 +175,14 @@ func TestMigrateUnsupportedWritesNothing(t *testing.T) {
 	cs, err := fx.migrate()
 	if err == nil || !strings.Contains(err.Error(), "rabbitmq") || len(cs) != 0 || site.HasMDConfig(fx.root) || len(fx.upSites) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
+	}
+}
+
+func TestMigrateLatestSearchWithoutComposerLockFails(t *testing.T) {
+	fx := msetup(t)
+	os.Remove(filepath.Join(fx.root, "composer.lock"))
+	if _, err := fx.migrate(); err == nil || !strings.Contains(err.Error(), "latest") || site.HasMDConfig(fx.root) {
+		t.Fatalf("err %v", err)
 	}
 }
 
@@ -318,7 +327,7 @@ func TestMigrateRollbackDisconnectsBeforeDown(t *testing.T) {
 	fx.upErr = os.ErrPermission
 	cs, _ := fx.migrate()
 	down := idx(cs, "docker compose -p md-mig -f "+filepath.Join(fx.home, "sites", "mig", "compose.yaml")+" down")
-	for _, c := range []string{"md-router", "md-xhgui", "md-opensearch-latest"} {
+	for _, c := range []string{"md-router", "md-xhgui", "md-opensearch-2.19.1"} {
 		i := idx(cs, "docker network disconnect md-mig_default "+c)
 		if i < 0 || down < 0 || i > down {
 			t.Fatalf("%s at %d down %d\n%v", c, i, down, cs)

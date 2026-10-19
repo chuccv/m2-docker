@@ -84,6 +84,9 @@ func Supported(s Site) error {
 	if s.SearchEngine != "" && s.SearchEngine != "opensearch" && s.SearchEngine != "elasticsearch" {
 		errs = append(errs, fmt.Errorf("search_engine %q is not supported, only opensearch or elasticsearch", s.SearchEngine))
 	}
+	if s.SearchVersion == "latest" {
+		errs = append(errs, fmt.Errorf("search version \"latest\" is not supported, pin a version in .md/config.yaml"))
+	}
 	for _, a := range []string{"rabbitmq"} {
 		if contains(s.Addons, a) {
 			errs = append(errs, fmt.Errorf("addon %s is not supported", a))
