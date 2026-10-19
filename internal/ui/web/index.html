@@ -4,44 +4,62 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Magento2 Docker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("md-theme"); } catch (e) {}
+  if (t !== "dark" && t !== "light") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  document.documentElement.dataset.theme = t;
+})();
+</script>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header>
-<h1>Magento2 Docker</h1>
-<nav>
-<button class="tab active" data-tab="sites">Sites</button>
-<button class="tab" data-tab="disk">Disk</button>
+<div class="title">
+<h1 id="title">Sites</h1>
+<span id="summary" class="muted"></span>
+</div>
+<div class="controls">
+<nav aria-label="Views">
+<button class="tab pill active" data-tab="sites">Sites</button>
+<button class="tab pill" data-tab="disk">Disk</button>
 </nav>
-<button id="poweroff" class="danger">Poweroff</button>
+<label class="search" id="search-box">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<input id="filter" type="search" placeholder="Filter sites" aria-label="Filter sites" autocomplete="off">
+</label>
+<button id="theme" class="pill icon" aria-label="Toggle theme" title="Toggle theme">
+<svg class="sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+<svg class="moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+</button>
+<button id="poweroff" class="pill danger">Poweroff</button>
+</div>
 </header>
 <div id="offline" hidden>Không kết nối được md ui — chạy lại <code>md ui</code></div>
-<div id="msg" hidden></div>
+<div id="msg" role="alert" hidden></div>
 <main>
 <section id="tab-sites">
-<div class="cards">
-<div class="card"><span>RAM</span><b id="total-mem">-</b></div>
-<div class="card"><span>CPU</span><b id="total-cpu">-</b></div>
-<div class="card"><span>Shared</span><b id="shared">-</b></div>
-</div>
-<div class="scroll">
-<table id="sites">
-<thead><tr><th>Site</th><th>Status</th><th>Links</th><th>PHP</th><th>DB</th><th>Search</th><th class="num">RAM</th><th class="num">CPU</th><th>Actions</th></tr></thead>
-<tbody></tbody>
-</table>
-</div>
+<h2 class="label" id="running-label">Running</h2>
+<div id="running" class="grid running"></div>
+<h2 class="label" id="stopped-label">Stopped</h2>
+<div id="stopped" class="grid stopped"></div>
+<p id="empty" class="muted" hidden>No sites</p>
 </section>
 <section id="tab-disk" hidden>
 <div class="clean">
-<button id="plan">Preview cleanup</button>
-<input id="confirm" placeholder="type yes" autocomplete="off" size="8">
-<button id="clean" class="danger">Clean</button>
+<button id="plan" class="pill">Preview cleanup</button>
+<input id="confirm" class="pill-input" placeholder="type yes" aria-label="Type yes to confirm cleanup" autocomplete="off" size="8">
+<button id="clean" class="pill danger">Clean</button>
 </div>
 <pre id="plan-out"></pre>
-<h2>Images</h2>
-<div id="images" class="grid"></div>
-<h2>Volumes</h2>
-<div id="volumes" class="grid"></div>
+<h2 class="label">Images</h2>
+<div id="images" class="grid disk"></div>
+<h2 class="label">Volumes</h2>
+<div id="volumes" class="grid disk"></div>
 </section>
 </main>
 <script src="app.js"></script>

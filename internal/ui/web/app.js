@@ -76,54 +76,95 @@
     parent.appendChild(b);
   }
 
-  function actionBtn(label, name, action, disabled) {
-    var b = el("button", "", label);
+  function actionBtn(label, cls, name, action, disabled) {
+    var b = el("button", cls, label);
     b.disabled = disabled;
     b.onclick = function () { act(name, action); };
     return b;
   }
 
+  function stat(label, value) {
+    var d = el("div", "stat");
+    d.appendChild(el("span", "", label));
+    d.appendChild(el("b", "", value || "-"));
+    return d;
+  }
+
+  function runningCard(s) {
+    var card = el("article", "site");
+    var wait = !!busy[s.name];
+    var head = el("div", "head");
+    var id = el("div");
+    id.appendChild(el("span", "name", s.name));
+    id.appendChild(el("span", "host mono", s.name + ".ddev.site"));
+    head.appendChild(id);
+    var label = wait ? busy[s.name] + "..." : s.status === "ddev" ? "running (ddev)" : s.status;
+    head.appendChild(el("span", wait ? "status busy" : "status", label));
+    card.appendChild(head);
+    var st = el("div", "stats");
+    st.appendChild(stat("PHP", s.php));
+    st.appendChild(stat("DB", s.db));
+    st.appendChild(stat("Search", s.search));
+    card.appendChild(st);
+    var u = statOf(s.name);
+    var use = el("div", "usage");
+    var ram = el("span", "", "RAM ");
+    ram.appendChild(el("b", "", u ? fmtMem(u.mem) : "-"));
+    var cpu = el("span", "", "CPU ");
+    cpu.appendChild(el("b", "", u ? u.cpu.toFixed(1) + "%" : "-"));
+    use.appendChild(ram);
+    use.appendChild(cpu);
+    card.appendChild(use);
+    var links = el("div", "links");
+    [["storefront", "Storefront"], ["admin", "Admin"], ["mailpit", "Mailpit"], ["xhgui", "XHGui"], ["phpmyadmin", "phpMyAdmin"]].forEach(function (k) {
+      if (s.urls && s.urls[k[0]]) links.appendChild(link(k[1], s.urls[k[0]]));
+    });
+    card.appendChild(links);
+    var btns = el("div", "btns");
+    btns.appendChild(actionBtn("Stop", "", s.name, "stop", wait));
+    btns.appendChild(actionBtn("Restart", "", s.name, "restart", wait));
+    card.appendChild(btns);
+    return card;
+  }
+
+  function stoppedCard(s) {
+    var card = el("article", "off");
+    var wait = !!busy[s.name];
+    var id = el("div");
+    id.appendChild(el("span", "name", s.name));
+    id.appendChild(el("span", "sub", "PHP " + (s.php || "-") + " · " + (s.search || "-")));
+    if (wait) id.appendChild(el("span", "busy-text", busy[s.name] + "..."));
+    if (s.blocked) badge(id, "chưa hỗ trợ md", s.blocked);
+    else if (s.note) badge(id, "chưa hỗ trợ md", s.note);
+    if (s.source === "ddev" && !s.blocked) badge(id, "md migrate", "Run md migrate in the site root to move this site to md");
+    card.appendChild(id);
+    var amber = s.source === "ddev" || !!s.blocked;
+    card.appendChild(actionBtn("Up", amber ? "dark amber" : "dark", s.name, "up", wait || !!s.blocked));
+    return card;
+  }
+
   function render() {
-    var tb = document.querySelector("#sites tbody");
-    tb.textContent = "";
-    var totMem = 0, totCpu = 0;
+    var q = $("filter").value.trim().toLowerCase();
+    var run = $("running"), stop = $("stopped");
+    run.textContent = "";
+    stop.textContent = "";
+    var nRun = 0, nStop = 0, nDdev = 0, totMem = 0, totCpu = 0, shown = 0;
     sites.forEach(function (s) {
-      var tr = el("tr");
-      tr.appendChild(el("td", "", s.name));
-      var label = busy[s.name] ? busy[s.name] + "..." : s.status === "ddev" ? "running (ddev)" : s.status;
-      var cls = busy[s.name] ? "busy" : s.status;
-      tr.appendChild(el("td", "st " + cls, label));
-      var links = el("td");
-      if (s.status !== "stopped") {
-        ["storefront", "admin", "mailpit", "xhgui", "phpmyadmin"].forEach(function (k) {
-          if (s.urls && s.urls[k]) links.appendChild(link(k, s.urls[k]));
-        });
-      }
-      tr.appendChild(links);
-      tr.appendChild(el("td", "", s.php || "-"));
-      tr.appendChild(el("td", "", s.db || "-"));
-      tr.appendChild(el("td", "", s.search || "-"));
+      var up = s.status !== "stopped";
+      if (up) nRun++; else nStop++;
+      if (s.source === "ddev") nDdev++;
       var u = statOf(s.name);
       if (u) { totMem += u.mem; totCpu += u.cpu; }
-      tr.appendChild(el("td", "num", u ? fmtMem(u.mem) : "-"));
-      tr.appendChild(el("td", "num", u ? u.cpu.toFixed(1) + "%" : "-"));
-      var ac = el("td", "actions");
-      var wait = !!busy[s.name];
-      var up = s.status !== "stopped";
-      ac.appendChild(actionBtn("Up", s.name, "up", wait || up || !!s.blocked));
-      ac.appendChild(actionBtn("Stop", s.name, "stop", wait || !up));
-      ac.appendChild(actionBtn("Restart", s.name, "restart", wait || !up));
-      if (s.blocked) badge(ac, "chưa hỗ trợ md", s.blocked);
-      else if (s.note) badge(ac, "chưa hỗ trợ md", s.note);
-      if (s.status === "stopped" && s.source === "ddev" && !s.blocked) badge(ac, "md migrate", "Run md migrate in the site root to move this site to md");
-      tr.appendChild(ac);
-      tb.appendChild(tr);
+      if (q && s.name.toLowerCase().indexOf(q) < 0) return;
+      shown++;
+      if (up) run.appendChild(runningCard(s)); else stop.appendChild(stoppedCard(s));
     });
+    $("running-label").hidden = !run.childNodes.length;
+    $("stopped-label").hidden = !stop.childNodes.length;
+    $("empty").hidden = shown > 0;
     totMem += stats.shared.mem || 0;
     totCpu += stats.shared.cpu || 0;
-    $("total-mem").textContent = fmtMem(totMem);
-    $("total-cpu").textContent = totCpu.toFixed(1) + "%";
-    $("shared").textContent = fmtMem(stats.shared.mem) + " / " + (stats.shared.cpu || 0).toFixed(1) + "%";
+    $("summary").textContent = nRun + " running · " + nStop + " stopped · " + nDdev + " on DDEV · " + fmtMem(totMem) + " RAM · " + totCpu.toFixed(1) + "% CPU (shared " + fmtMem(stats.shared.mem) + " / " + (stats.shared.cpu || 0).toFixed(1) + "%)";
   }
 
   function refreshSites() {
@@ -170,10 +211,20 @@
   function showTab(name) {
     ["sites", "disk"].forEach(function (t) { $("tab-" + t).hidden = t !== name; });
     document.querySelectorAll(".tab").forEach(function (b) { b.classList.toggle("active", b.dataset.tab === name); });
+    $("title").textContent = name === "disk" ? "Disk" : "Sites";
+    $("search-box").hidden = name === "disk";
     if (name === "disk") refreshDisk();
   }
 
   document.querySelectorAll(".tab").forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); }; });
+
+  $("filter").oninput = render;
+
+  $("theme").onclick = function () {
+    var t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem("md-theme", t); } catch (e) {}
+  };
 
   $("poweroff").onclick = function () {
     if (!window.confirm("Stop every running site and the shared stack?")) return;
