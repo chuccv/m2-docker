@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
 	"github.com/chuccv/m2-docker/internal/config"
 	"github.com/chuccv/m2-docker/internal/run"
@@ -35,12 +36,7 @@ func defaultEnv() *env {
 }
 
 func stdioIsTerminal() bool {
-	return isCharDevice(os.Stdin) && isCharDevice(os.Stdout)
-}
-
-func isCharDevice(f *os.File) bool {
-	st, err := f.Stat()
-	return err == nil && st.Mode()&os.ModeCharDevice != 0
+	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }
 
 func (e *env) findSite(name string) (site.Site, error) {
