@@ -196,29 +196,37 @@
     });
   }
 
+  var disk = null;
+
+  function renderDisk() {
+    if (!disk) return;
+    var q = $("filter").value.trim().toLowerCase();
+    var keep = function (it) { return !q || (it.group + " " + it.name).toLowerCase().indexOf(q) >= 0; };
+    tiles("images", disk.images.map(function (i) {
+      var used = +i.containers ? (i.used_by ? "used by " + i.used_by : "in use: " + i.containers) : "unused";
+      return { group: i.repo === "<none>" ? "untagged (old builds)" : i.repo, name: i.tag, size: i.size, meta: used, idle: !+i.containers };
+    }).filter(keep));
+    tiles("volumes", disk.volumes.map(function (v) {
+      return { group: v.site || "no site", name: v.name, size: v.size, meta: "", idle: !v.site };
+    }).filter(keep));
+  }
+
   function refreshDisk() {
-    api("GET", "/api/disk").then(function (d) {
-      tiles("images", d.images.map(function (i) {
-        var used = +i.containers ? (i.used_by ? "used by " + i.used_by : "in use: " + i.containers) : "unused";
-        return { group: i.repo === "<none>" ? "untagged (old builds)" : i.repo, name: i.tag, size: i.size, meta: used, idle: !+i.containers };
-      }));
-      tiles("volumes", d.volumes.map(function (v) {
-        return { group: v.site || "no site", name: v.name, size: v.size, meta: "", idle: !v.site };
-      }));
-    }).catch(function (e) { if (!e.offline) showMsg(e.message); });
+    api("GET", "/api/disk").then(function (d) { disk = d; renderDisk(); }).catch(function (e) { if (!e.offline) showMsg(e.message); });
   }
 
   function showTab(name) {
     ["sites", "disk"].forEach(function (t) { $("tab-" + t).hidden = t !== name; });
     document.querySelectorAll(".tab").forEach(function (b) { b.classList.toggle("active", b.dataset.tab === name); });
     $("title").textContent = name === "disk" ? "Disk" : "Sites";
-    $("search-box").hidden = name === "disk";
+    $("filter").placeholder = name === "disk" ? "Filter images, volumes" : "Filter sites";
+    $("filter").setAttribute("aria-label", $("filter").placeholder);
     if (name === "disk") refreshDisk();
   }
 
-  document.querySelectorAll(".tab").forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); }; });
+  document.querySelectorAll(".tab").forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); b.blur(); }; });
 
-  $("filter").oninput = render;
+  $("filter").oninput = function () { render(); renderDisk(); };
 
   $("theme").onclick = function () {
     var t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
