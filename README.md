@@ -46,7 +46,7 @@ State lives in `~/.md`. Snapshots go to `~/.md/sites/<name>/snapshots/`.
 
 `md mcp` serves an MCP server over stdio so Claude Code can drive md and Magento sites.
 
-    claude mcp add -s user md -- md mcp
+    claude mcp add -s user m2-docker -- md mcp
 
 Every tool except `sites_list` takes the site name as `site`. Output is capped at about 20 KB.
 
