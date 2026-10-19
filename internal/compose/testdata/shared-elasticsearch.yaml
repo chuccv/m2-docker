@@ -16,6 +16,13 @@ services:
       - md-elasticsearch-7.17.14-plugins:/usr/share/elasticsearch/plugins
     networks:
       - md
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fs 'localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s' || exit 1
+      interval: 5s
+      retries: 60
+      start_period: 10s
   md-opensearch-2.19.1:
     image: opensearchproject/opensearch:2.19.1
     entrypoint:
@@ -28,12 +35,19 @@ services:
       - discovery.type=single-node
       - DISABLE_INSTALL_DEMO_CONFIG=true
       - DISABLE_SECURITY_PLUGIN=true
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - OPENSEARCH_JAVA_OPTS=-Xms768m -Xmx768m
     volumes:
       - md-opensearch-2.19.1-data:/usr/share/opensearch/data
       - md-opensearch-2.19.1-plugins:/usr/share/opensearch/plugins
     networks:
       - md
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fs 'localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s' || exit 1
+      interval: 5s
+      retries: 60
+      start_period: 10s
   md-router:
     image: traefik:v3.3
     container_name: md-router

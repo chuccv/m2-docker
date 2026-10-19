@@ -32,6 +32,14 @@ type service struct {
 	ExtraHosts    []string          `yaml:"extra_hosts,omitempty"`
 	Networks      []string          `yaml:"networks,omitempty"`
 	Labels        map[string]string `yaml:"labels,omitempty"`
+	Healthcheck   *healthcheck      `yaml:"healthcheck,omitempty"`
+}
+
+type healthcheck struct {
+	Test        []string `yaml:"test"`
+	Interval    string   `yaml:"interval"`
+	Retries     int      `yaml:"retries"`
+	StartPeriod string   `yaml:"start_period"`
 }
 
 type network struct {

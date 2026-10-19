@@ -206,7 +206,7 @@ func (e *env) up(s site.Site, home string) error {
 	if err := writeFile(sharedFile, shared); err != nil {
 		return err
 	}
-	services := []string{"compose", "-p", "md-shared", "-f", sharedFile, "up", "-d", "md-router", "md-xhgui"}
+	services := []string{"compose", "-p", "md-shared", "-f", sharedFile, "up", "-d", "--wait", "md-router", "md-xhgui"}
 	if key := s.SearchKey(); key != "" {
 		services = append(services, site.SearchContainer(key))
 	}

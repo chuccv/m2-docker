@@ -18,7 +18,7 @@ const (
 	dbKey     = "docker run --rm -u 1000:1000 --entrypoint cat -v ee249-qa-mariadb:/v:ro mariadb:11.4 /v/db_mariadb_version.txt"
 	imgKey    = "docker image inspect -f {{index .Config.Labels \"com.md.hash\"}} md/php:8.5"
 	volKey    = "docker volume inspect md-node-22"
-	sharedUp  = "docker compose -p md-shared -f %s/shared/compose.yaml up -d"
+	sharedUp  = "docker compose -p md-shared -f %s/shared/compose.yaml up -d --wait"
 	siteUpFmt = "docker compose -p md-ee249-qa -f %s/sites/ee249-qa/compose.yaml up -d --wait"
 )
 

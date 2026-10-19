@@ -11,12 +11,19 @@ services:
       - discovery.type=single-node
       - DISABLE_INSTALL_DEMO_CONFIG=true
       - DISABLE_SECURITY_PLUGIN=true
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - OPENSEARCH_JAVA_OPTS=-Xms768m -Xmx768m
     volumes:
       - md-opensearch-3.0.0-data:/usr/share/opensearch/data
       - md-opensearch-3.0.0-plugins:/usr/share/opensearch/plugins
     networks:
       - md
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fs 'localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s' || exit 1
+      interval: 5s
+      retries: 60
+      start_period: 10s
   md-opensearch-latest:
     image: opensearchproject/opensearch:latest
     entrypoint:
@@ -35,6 +42,13 @@ services:
       - md-opensearch-latest-plugins:/usr/share/opensearch/plugins
     networks:
       - md
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fs 'localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s' || exit 1
+      interval: 5s
+      retries: 60
+      start_period: 10s
   md-router:
     image: traefik:v3.3
     container_name: md-router
