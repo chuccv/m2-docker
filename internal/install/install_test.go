@@ -408,3 +408,120 @@ func TestInstallSuccessKeepsConfigAndNoVolumeMessage(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+func TestInstallElasticsearch7(t *testing.T) {
+	fx := setup(t)
+	fx.opts.SearchEngine, fx.opts.Search = "elasticsearch", "7.17.14"
+	cs, err := fx.run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	inst := cs[idx(cs, "setup:install")]
+	for _, w := range []string{"--search-engine=elasticsearch7", "--elasticsearch-host=elasticsearch", "--elasticsearch-port=9200", "--elasticsearch-index-prefix=shop"} {
+		if !strings.Contains(inst, w) {
+			t.Errorf("missing %s", w)
+		}
+	}
+	if strings.Contains(inst, "opensearch") {
+		t.Error("opensearch flag present")
+	}
+	s, err := site.Load(fx.root)
+	if err != nil || s.SearchEngine != "elasticsearch" || s.SearchVersion != "7.17.14" {
+		t.Fatalf("%+v %v", s, err)
+	}
+	if len(fx.upCalls) != 1 || fx.upCalls[0].SearchKey() != "elasticsearch:7.17.14" {
+		t.Fatalf("up %+v", fx.upCalls)
+	}
+}
+
+func TestInstallElasticsearch8(t *testing.T) {
+	fx := setup(t)
+	fx.opts.SearchEngine, fx.opts.Search = "elasticsearch", "8.11.0"
+	cs, err := fx.run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst := cs[idx(cs, "setup:install")]; !strings.Contains(inst, "--search-engine=elasticsearch8") {
+		t.Fatal(inst)
+	}
+}
+
+func TestInstallSearchEngineNeedsVersion(t *testing.T) {
+	fx := setup(t)
+	fx.opts.SearchEngine = "elasticsearch"
+	if cs, err := fx.run(); err == nil || len(cs) != 0 {
+		t.Fatalf("err %v calls %v", err, cs)
+	}
+}
+
+func TestInstallMySQLVolume(t *testing.T) {
+	fx := setup(t)
+	fx.f.Err["docker volume inspect shop-mysql"] = os.ErrNotExist
+	fx.opts.DBType, fx.opts.DB = "mysql", "8.0"
+	cs, err := fx.run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if idx(cs, "docker volume create --label com.md.db=mysql_8.0 shop-mysql") < 0 || idx(cs, "docker volume inspect shop-mysql") < 0 {
+		t.Fatalf("calls %v", cs)
+	}
+	s, err := site.Load(fx.root)
+	if err != nil || s.DBType != "mysql" || s.DBVersion != "8.0" {
+		t.Fatalf("%+v %v", s, err)
+	}
+}
+
+func TestInstallBadDBType(t *testing.T) {
+	fx := setup(t)
+	fx.opts.DBType = "postgres"
+	if cs, err := fx.run(); err == nil || len(cs) != 0 {
+		t.Fatalf("err %v", err)
+	}
+}
+
+func TestInstallVarnish(t *testing.T) {
+	fx := setup(t)
+	fx.opts.Varnish = true
+	if _, err := fx.run(); err != nil {
+		t.Fatal(err)
+	}
+	s, err := site.Load(fx.root)
+	if err != nil || s.Varnish != "7.6" {
+		t.Fatalf("%+v %v", s, err)
+	}
+}
+
+func TestInstallNoVarnishByDefault(t *testing.T) {
+	fx := setup(t)
+	if _, err := fx.run(); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := site.Load(fx.root)
+	if s.Varnish != "" {
+		t.Fatalf("varnish %q", s.Varnish)
+	}
+}
+
+func TestInstallWritesStackVersions(t *testing.T) {
+	fx := setup(t)
+	fx.opts.Version = "2.4.6"
+	if _, err := fx.run(); err != nil {
+		t.Fatal(err)
+	}
+	s, err := site.Load(fx.root)
+	if err != nil || s.RedisVersion != "7.0" || s.NodeVersion != "22" || s.SearchVersion != "2.5.0" {
+		t.Fatalf("%+v %v", s, err)
+	}
+}
+
+func TestInstallUserStacksOverride(t *testing.T) {
+	fx := setup(t)
+	os.WriteFile(filepath.Join(fx.home, "stacks.yaml"), []byte("\"2.4.8\":\n  php: \"8.3\"\n  database: {type: mariadb, version: \"10.11\"}\n  search: {engine: opensearch, version: \"2.12.0\"}\n  redis: \"7.0\"\n  node: \"20\"\n"), 0o644)
+	if _, err := fx.run(); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := site.Load(fx.root)
+	if s.PHPVersion != "8.3" || s.DBVersion != "10.11" || s.RedisVersion != "7.0" {
+		t.Fatalf("%+v", s)
+	}
+}

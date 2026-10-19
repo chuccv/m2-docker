@@ -228,3 +228,17 @@ func TestRenderSiteMySQL(t *testing.T) {
 	}
 	golden(t, "site-mysql.yaml", out)
 }
+
+func TestRenderSiteRedisVersion(t *testing.T) {
+	s := loadSite(t, "pfsm248")
+	s.Addons = []string{"redis"}
+	def, err := RenderSite(s, paths)
+	if err != nil || !strings.Contains(string(def), "image: redis:7\n") {
+		t.Fatalf("default: %v\n%s", err, def)
+	}
+	s.RedisVersion = "7.2"
+	out, err := RenderSite(s, paths)
+	if err != nil || !strings.Contains(string(out), "image: redis:7.2\n") {
+		t.Fatalf("7.2: %v\n%s", err, out)
+	}
+}

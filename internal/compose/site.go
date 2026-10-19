@@ -97,9 +97,13 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 		f.Services["web"] = web
 	}
 	if hasAddon(s, "redis") {
+		redisImage := "redis:7"
+		if s.RedisVersion != "" {
+			redisImage = "redis:" + s.RedisVersion
+		}
 		redisVol := "ddev-" + s.Name + "_redis"
 		f.Services["redis"] = service{
-			Image:         "redis:7",
+			Image:         redisImage,
 			ContainerName: "ddev-" + s.Name + "-redis",
 			Restart:       "no",
 			Volumes:       []string{redisVol + ":/data"},

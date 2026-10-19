@@ -47,6 +47,7 @@ type MDConfig struct {
 	PhpMyAdmin   bool        `yaml:"phpmyadmin,omitempty"`
 	Node         string      `yaml:"node"`
 	Redis        bool        `yaml:"redis"`
+	RedisVersion string      `yaml:"redis_version,omitempty"`
 	Hostnames    []string    `yaml:"hostnames"`
 	Websites     []Website   `yaml:"websites"`
 	Magento      struct {
@@ -158,6 +159,7 @@ func loadMD(root string) (Site, error) {
 		SearchEngine:  c.SearchEngine,
 		Varnish:       string(c.Varnish),
 		PhpMyAdmin:    c.PhpMyAdmin,
+		RedisVersion:  c.RedisVersion,
 	}
 	if c.Redis {
 		s.Addons = []string{"redis"}
