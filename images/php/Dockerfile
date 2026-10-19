@@ -41,4 +41,4 @@ ENV PATH=/opt/node/bin:$PATH
 WORKDIR /var/www/html
 EXPOSE 80 8025 1025
 USER www
-ENTRYPOINT ["tini", "--", "/usr/local/bin/md-entrypoint"]
+ENTRYPOINT ["tini", "-g", "--", "/usr/local/bin/md-entrypoint"]
