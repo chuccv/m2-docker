@@ -17,6 +17,7 @@ import (
 	"github.com/chuccv/m2-docker/internal/compose"
 	"github.com/chuccv/m2-docker/internal/config"
 	"github.com/chuccv/m2-docker/internal/guard"
+	"github.com/chuccv/m2-docker/internal/migrate"
 	"github.com/chuccv/m2-docker/internal/router"
 	"github.com/chuccv/m2-docker/internal/site"
 	"github.com/chuccv/m2-docker/internal/tls"
@@ -320,5 +321,16 @@ func (e *env) upByName(name string) error {
 	if err != nil {
 		return err
 	}
-	return e.up(s, home)
+	if err := e.up(s, home); err != nil {
+		return err
+	}
+	if s.SearchVersion == "" || !fileExists(filepath.Join(s.Root, "app", "etc", "env.php")) {
+		return nil
+	}
+	return migrate.EnsureSearchMigrated(home, s, e.runner)
+}
+
+func fileExists(p string) bool {
+	_, err := os.Stat(p)
+	return err == nil
 }

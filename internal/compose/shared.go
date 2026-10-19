@@ -99,6 +99,10 @@ func RenderShared(searchVersions []string, cfg config.Config, p Paths) ([]byte, 
 				Networks: []string{"md"},
 			}
 		} else {
+			heap := "512m"
+			if key == "latest" {
+				heap = "768m"
+			}
 			f.Services[name] = service{
 				Image:         "opensearchproject/opensearch:" + key,
 				Entrypoint:    []string{"sh", "-c", "for p in analysis-icu analysis-phonetic; do ./bin/opensearch-plugin list | grep -qx $$p || ./bin/opensearch-plugin install --batch $$p; done; exec ./opensearch-docker-entrypoint.sh opensearch"},
@@ -108,7 +112,7 @@ func RenderShared(searchVersions []string, cfg config.Config, p Paths) ([]byte, 
 					"discovery.type=single-node",
 					"DISABLE_INSTALL_DEMO_CONFIG=true",
 					"DISABLE_SECURITY_PLUGIN=true",
-					"OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m",
+					"OPENSEARCH_JAVA_OPTS=-Xms" + heap + " -Xmx" + heap,
 				},
 				Volumes:  []string{name + "-data:/usr/share/opensearch/data", name + "-plugins:/usr/share/opensearch/plugins"},
 				Networks: []string{"md"},

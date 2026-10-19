@@ -347,7 +347,31 @@ func TestUpHasNoSkipMigrateFlag(t *testing.T) {
 	}
 }
 
-func TestUpDoesNotRunSearchMigration(t *testing.T) {
+func TestUpSetsSearchPrefixOnceForInstalledSite(t *testing.T) {
+	e, f, _ := upEnv(t)
+	s, err := e.findSite("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.MkdirAll(filepath.Join(s.Root, "app", "etc"), 0o755)
+	os.WriteFile(filepath.Join(s.Root, "app", "etc", "env.php"), []byte("<?php return [];"), 0o644)
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	cs := calls(f)
+	if index(cs, "opensearch_index_prefix ee249_qa") < 0 || index(cs, "indexer:reindex catalogsearch_fulltext") < 0 {
+		t.Fatalf("no prefix migration:\n%s", strings.Join(cs, "\n"))
+	}
+	f.Calls = nil
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	if index(calls(f), "indexer:reindex") >= 0 {
+		t.Fatal("reindex ran twice")
+	}
+}
+
+func TestUpSkipsSearchMigrationWithoutEnvPHP(t *testing.T) {
 	e, f, _ := upEnv(t)
 	if err := exec(t, e, "up"); err != nil {
 		t.Fatal(err)
