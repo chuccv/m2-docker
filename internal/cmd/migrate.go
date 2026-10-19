@@ -9,7 +9,8 @@ import (
 )
 
 func newMigrateCmd(e *env) *cobra.Command {
-	return &cobra.Command{
+	var ignoreCompose bool
+	c := &cobra.Command{
 		Use:   "migrate [dir]",
 		Short: "Migrate a DDEV site to md (.md/config.yaml)",
 		Args:  cobra.MaximumNArgs(1),
@@ -26,7 +27,9 @@ func newMigrateCmd(e *env) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return install.Migrate(root, e.runner, home, cfg.Ports, func(s site.Site) error { return e.up(s, home) })
+			return install.Migrate(root, e.runner, home, cfg.Ports, ignoreCompose, func(s site.Site) error { return e.up(s, home) })
 		},
 	}
+	c.Flags().BoolVar(&ignoreCompose, "ignore-extra-compose", false, "migrate even when .ddev has compose files md does not support; they are ignored")
+	return c
 }

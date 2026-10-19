@@ -24,13 +24,14 @@ const (
 )
 
 type mfixture struct {
-	root, home string
-	f          *run.FakeRunner
-	ports      config.Ports
-	upSites    []site.Site
-	upSawMD    bool
-	upErr      error
-	noCompose  bool
+	root, home    string
+	f             *run.FakeRunner
+	ports         config.Ports
+	upSites       []site.Site
+	upSawMD       bool
+	upErr         error
+	noCompose     bool
+	ignoreCompose bool
 }
 
 func msetup(t *testing.T) *mfixture {
@@ -60,7 +61,7 @@ func (fx *mfixture) migrate() ([]string, error) {
 		}
 		return fx.upErr
 	}
-	err := Migrate(fx.root, fx.f, fx.home, fx.ports, up)
+	err := Migrate(fx.root, fx.f, fx.home, fx.ports, fx.ignoreCompose, up)
 	var cs []string
 	for _, c := range fx.f.Calls {
 		cs = append(cs, strings.Join(c, " "))
@@ -173,6 +174,15 @@ func TestMigrateUnsupportedWritesNothing(t *testing.T) {
 	cs, err := fx.migrate()
 	if err == nil || !strings.Contains(err.Error(), "rabbitmq") || len(cs) != 0 || site.HasMDConfig(fx.root) || len(fx.upSites) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
+	}
+}
+
+func TestMigrateIgnoreComposeSkipsUnknownCompose(t *testing.T) {
+	fx := msetup(t)
+	fx.ignoreCompose = true
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.custom.yaml"), []byte("x"), 0o644)
+	if _, err := fx.migrate(); err != nil || !site.HasMDConfig(fx.root) {
+		t.Fatalf("err %v", err)
 	}
 }
 
@@ -339,7 +349,7 @@ func TestMigrateBacksUpEnvPhpBeforeUp(t *testing.T) {
 		os.WriteFile(env, []byte("changed"), 0o644)
 		return nil
 	}
-	if err := Migrate(fx.root, fx.f, fx.home, fx.ports, up); err != nil {
+	if err := Migrate(fx.root, fx.f, fx.home, fx.ports, fx.ignoreCompose, up); err != nil {
 		t.Fatal(err)
 	}
 	info, err := os.Stat(bak)
@@ -359,7 +369,7 @@ func TestMigrateRollbackPrintsEnvPhpHintNoAutoRestore(t *testing.T) {
 	old := os.Stderr
 	os.Stderr = wr
 	up := func(s site.Site) error { os.WriteFile(env, []byte("changed"), 0o644); return nil }
-	err := Migrate(fx.root, fx.f, fx.home, fx.ports, up)
+	err := Migrate(fx.root, fx.f, fx.home, fx.ports, fx.ignoreCompose, up)
 	os.Stderr = old
 	wr.Close()
 	out, _ := io.ReadAll(rd)

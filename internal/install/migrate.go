@@ -48,7 +48,7 @@ func FromDDEV(s site.Site) site.MDConfig {
 	return c
 }
 
-func Migrate(root string, r run.Runner, home string, ports config.Ports, up func(site.Site) error) (err error) {
+func Migrate(root string, r run.Runner, home string, ports config.Ports, ignoreCompose bool, up func(site.Site) error) (err error) {
 	root, err = filepath.Abs(root)
 	if err != nil {
 		return err
@@ -70,8 +70,10 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, up func
 	if err := guard.CheckNoDDEV(r, s, ports); err != nil {
 		return err
 	}
-	if err := guard.CheckExtraCompose(s); err != nil {
-		return err
+	if !ignoreCompose {
+		if err := guard.CheckExtraCompose(s); err != nil {
+			return err
+		}
 	}
 	if err := guard.CheckDBVersion(r, s); err != nil {
 		return err
