@@ -33,8 +33,8 @@ func EnsureSearchMigrated(home string, s site.Site, r run.Runner) error {
 	}
 	for _, st := range steps {
 		args := append(append([]string{}, web...), st.args...)
-		if _, err := r.Run("docker", args...); err != nil {
-			return fmt.Errorf("search migration step %s: %w", st.label, err)
+		if out, err := r.Run("docker", args...); err != nil {
+			return fmt.Errorf("search migration step %s: %w\n%s", st.label, err, strings.TrimSpace(out))
 		}
 	}
 	return WriteMarker(home, s.Name)

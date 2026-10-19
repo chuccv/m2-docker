@@ -19,6 +19,7 @@ var allowedCompose = map[string]bool{
 	"redis":             true,
 	"mutagen":           true,
 	"varnish":           true,
+	"varnish_extras":    true,
 	"phpmyadmin":        true,
 	"elasticsearch":     true,
 	"xhgui-extended":    true,
