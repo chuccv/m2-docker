@@ -89,22 +89,24 @@ func siteOf(container string, known []string) (string, bool) {
 	return rest, true
 }
 
-func collectStats(r run.Runner, known []string) (Stats, error) {
-	out, err := r.Run("docker", "stats", "--no-stream", "--format", "{{json .}}")
-	st := Stats{Sites: []Usage{}, Containers: []Usage{}, Shared: Usage{Name: "shared"}}
-	if err != nil {
-		return st, err
+type statRow struct{ Name, CPUPerc, MemUsage string }
+
+func parseStatRow(l string) (statRow, bool) {
+	i := strings.Index(l, "{")
+	if i < 0 {
+		return statRow{}, false
 	}
+	var row statRow
+	if json.Unmarshal([]byte(l[i:]), &row) != nil {
+		return statRow{}, false
+	}
+	return row, true
+}
+
+func buildStats(rows []statRow, known []string) Stats {
+	st := Stats{Sites: []Usage{}, Containers: []Usage{}, Shared: Usage{Name: "shared"}}
 	bySite := map[string]*Usage{}
-	for _, l := range strings.Split(out, "\n") {
-		l = strings.TrimSpace(l)
-		if l == "" {
-			continue
-		}
-		var row struct{ Name, CPUPerc, MemUsage string }
-		if json.Unmarshal([]byte(l), &row) != nil {
-			continue
-		}
+	for _, row := range rows {
 		u := Usage{Name: row.Name, CPUPercent: parseCPU(row.CPUPerc), MemBytes: parseMem(row.MemUsage)}
 		st.Containers = append(st.Containers, u)
 		name, ok := siteOf(row.Name, known)
@@ -125,5 +127,19 @@ func collectStats(r run.Runner, known []string) (Stats, error) {
 		st.Sites = append(st.Sites, *g)
 	}
 	sort.Slice(st.Sites, func(i, j int) bool { return st.Sites[i].Name < st.Sites[j].Name })
-	return st, nil
+	return st
+}
+
+func collectStats(r run.Runner, known []string) (Stats, error) {
+	out, err := r.Run("docker", "stats", "--no-stream", "--format", "{{json .}}")
+	if err != nil {
+		return buildStats(nil, known), err
+	}
+	var rows []statRow
+	for _, l := range strings.Split(out, "\n") {
+		if row, ok := parseStatRow(strings.TrimSpace(l)); ok {
+			rows = append(rows, row)
+		}
+	}
+	return buildStats(rows, known), nil
 }

@@ -191,8 +191,29 @@
     }).catch(function (e) { if (!e.offline) showMsg("clean: " + e.message); });
   };
 
+  var pollStats = null, pollSites = null;
+
+  function startPolling() {
+    if (pollStats) return;
+    refreshStats();
+    pollStats = setInterval(refreshStats, 3000);
+    pollSites = setInterval(refreshSites, 5000);
+  }
+
+  function stopPolling() {
+    clearInterval(pollStats);
+    clearInterval(pollSites);
+    pollStats = pollSites = null;
+  }
+
+  function listen() {
+    var es = new EventSource("/api/events");
+    es.onopen = function () { stopPolling(); setOffline(false); };
+    es.onerror = function () { setOffline(true); startPolling(); };
+    es.addEventListener("sites", function (e) { sites = JSON.parse(e.data); render(); });
+    es.addEventListener("stats", function (e) { stats = JSON.parse(e.data); render(); });
+  }
+
   refreshSites();
-  refreshStats();
-  setInterval(refreshStats, 3000);
-  setInterval(refreshSites, 5000);
+  if (window.EventSource) listen(); else startPolling();
 })();

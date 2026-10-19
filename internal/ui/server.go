@@ -32,6 +32,7 @@ type server struct {
 	scanRoots []string
 	mu        sync.Mutex
 	busy      map[string]bool
+	hub       *hub
 }
 
 var siteName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
@@ -43,12 +44,18 @@ func NewServer(home string, r run.Runner, actions Actions) http.Handler {
 }
 
 func newServer(home string, r run.Runner, actions Actions, roots []string) http.Handler {
+	return newServerStream(home, r, actions, roots, execStream)
+}
+
+func newServerStream(home string, r run.Runner, actions Actions, roots []string, stream streamFunc) http.Handler {
 	s := &server{home: home, r: r, actions: actions, scanRoots: roots, busy: map[string]bool{}}
+	s.hub = newHub(stream, s.sitesPayload)
 	sub, _ := fs.Sub(webFS, "web")
 	mux := http.NewServeMux()
 	mux.Handle("GET /", http.FileServerFS(sub))
 	mux.HandleFunc("GET /api/sites", s.handleSites)
 	mux.HandleFunc("GET /api/stats", s.handleStats)
+	mux.HandleFunc("GET /api/events", s.handleEvents)
 	mux.HandleFunc("GET /api/disk", s.handleDisk)
 	mux.HandleFunc("GET /api/clean", s.handleCleanPlan)
 	mux.HandleFunc("POST /api/clean", s.handleCleanApply)
