@@ -110,6 +110,7 @@ Containers use `restart: "no"`: nothing starts on boot, run `md up` when you nee
 ## Compatibility with DDEV
 
 - Container names stay `ddev-<name>-web`, `ddev-<name>-db`, `ddev-<name>-redis`
-- Hostnames stay `<name>.ddev.site`, plus `additional_hostnames` and `additional_fqdns`
+- Sites answer on `<name>.md.site` (base URL) and still on `<name>.ddev.site` as an alias, plus `additional_hostnames` (as `<host>.md.site`) and `additional_fqdns`
+- `md.site` has no public DNS: add the lines from `md hosts --all` to `/etc/hosts`
 - Existing `<name>-mariadb` volumes are reused as-is
 - md refuses to start while DDEV containers for the same site, or the DDEV router on the same ports, are running

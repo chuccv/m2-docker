@@ -41,23 +41,34 @@ func containsStr(l []string, v string) bool {
 }
 
 func newHostsCmd(e *env) *cobra.Command {
-	return &cobra.Command{
+	var all bool
+	cmd := &cobra.Command{
 		Use:   "hosts [site]",
 		Short: "Print /etc/hosts lines needed for the current site",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
-			name := ""
-			if len(args) == 1 {
-				name = args[0]
+			var sites []site.Site
+			if all {
+				for _, root := range e.scanRoots {
+					sites = append(sites, site.ScanAll(root)...)
+				}
+			} else {
+				name := ""
+				if len(args) == 1 {
+					name = args[0]
+				}
+				s, err := e.findSite(name)
+				if err != nil {
+					return err
+				}
+				sites = []site.Site{s}
 			}
-			s, err := e.findSite(name)
-			if err != nil {
-				return err
-			}
-			for _, l := range hostsLines([]site.Site{s}, net.LookupHost) {
+			for _, l := range hostsLines(sites, net.LookupHost) {
 				fmt.Fprintln(c.OutOrStdout(), l)
 			}
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&all, "all", false, "every site under the scan roots")
+	return cmd
 }

@@ -106,7 +106,7 @@ func TestUpCallOrder(t *testing.T) {
 		"docker compose -p md-ee249-qa",
 		"docker network connect --alias opensearch md-ee249-qa_default md-opensearch-2.19.1",
 		"docker network connect --alias xhgui md-ee249-qa_default md-xhgui",
-		"docker network connect --alias ee249-qa.ddev.site --alias shop.ddev.site md-ee249-qa_default md-router",
+		"docker network connect --alias ee249-qa.md.site --alias ee249-qa.ddev.site --alias shop.ddev.site md-ee249-qa_default md-router",
 	}
 	last := -1
 	for _, o := range order {
@@ -131,7 +131,7 @@ func TestUpCallOrder(t *testing.T) {
 	if !strings.Contains(string(st), "2.19.1") {
 		t.Fatalf("state: %s", st)
 	}
-	if !strings.Contains(e.out.(*strings.Builder).String(), "https://ee249-qa.ddev.site\n") {
+	if !strings.Contains(e.out.(*strings.Builder).String(), "https://ee249-qa.md.site\n") {
 		t.Fatalf("urls: %s", e.out.(*strings.Builder).String())
 	}
 }
@@ -195,7 +195,7 @@ func TestUpReconnectsSharedToOtherRunningSites(t *testing.T) {
 		t.Fatal(err)
 	}
 	cs := calls(f)
-	for _, want := range []string{"docker network connect --alias opensearch md-other_default md-opensearch-2.19.1", "docker network connect --alias other.ddev.site md-other_default md-router"} {
+	for _, want := range []string{"docker network connect --alias opensearch md-other_default md-opensearch-2.19.1", "docker network connect --alias other.md.site --alias other.ddev.site md-other_default md-router"} {
 		if index(cs, want) < 0 {
 			t.Fatalf("missing %q:\n%s", want, strings.Join(cs, "\n"))
 		}
@@ -463,7 +463,7 @@ func TestMigrateCmd(t *testing.T) {
 	cs := calls(f)
 	up := index(cs, "docker compose -p md-ee249-qa")
 	re := index(cs, "indexer:reindex")
-	lock := index(cs, "web/secure/base_url https://ee249-qa.ddev.site")
+	lock := index(cs, "web/secure/base_url https://ee249-qa.md.site")
 	if up < 0 || re < up || lock < up {
 		t.Fatalf("order up=%d reindex=%d lock=%d\n%s", up, re, lock, strings.Join(cs, "\n"))
 	}

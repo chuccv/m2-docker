@@ -167,7 +167,7 @@ func TestMCPTruncation(t *testing.T) {
 func TestMCPXhprofOnReturnsURL(t *testing.T) {
 	e, f, _ := testEnv(t, false)
 	out, isErr := callTool(t, mcpSession(t, e), "xhprof", map[string]any{"site": "ee249-qa", "on": true})
-	if isErr || !strings.Contains(out, "https://ee249-qa.ddev.site:8142") {
+	if isErr || !strings.Contains(out, "https://ee249-qa.md.site:8142") {
 		t.Fatalf("got %q err=%v", out, isErr)
 	}
 	want(t, f, "docker", "exec", "-u", "1000", "ddev-ee249-qa-web", "sh", "-c", toggleScript("xhprof", true))
@@ -218,7 +218,7 @@ func TestMCPSitesListAndStop(t *testing.T) {
 	f.Out = map[string]string{"docker compose ls --format json": `[{"Name":"md-ee249-qa","Status":"running(3)"}]`}
 	cs := mcpSession(t, e)
 	out, isErr := callTool(t, cs, "sites_list", map[string]any{})
-	if isErr || !strings.Contains(out, "ee249-qa") || !strings.Contains(out, "running") || !strings.Contains(out, "https://ee249-qa.ddev.site") || !strings.Contains(out, root+"/ee249-qa") {
+	if isErr || !strings.Contains(out, "ee249-qa") || !strings.Contains(out, "running") || !strings.Contains(out, "https://ee249-qa.md.site") || !strings.Contains(out, root+"/ee249-qa") {
 		t.Fatalf("got %q err=%v", out, isErr)
 	}
 	f.Calls = nil

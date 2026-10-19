@@ -43,8 +43,11 @@ func FromDDEV(s site.Site) site.MDConfig {
 			c.Redis = true
 		}
 	}
-	if len(s.Hostnames) > 1 {
-		c.Hostnames = append([]string{}, s.Hostnames[1:]...)
+	defaults := site.DefaultHosts(s.Name)
+	for _, h := range s.Hostnames {
+		if h != defaults[0] && h != defaults[1] {
+			c.Hostnames = append(c.Hostnames, h)
+		}
 	}
 	return c
 }

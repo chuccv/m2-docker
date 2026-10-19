@@ -21,7 +21,7 @@ func TestLoadEE249QA(t *testing.T) {
 	if s.Name != "ee249-qa" || s.PHPVersion != "8.5" || s.DBType != "mariadb" || s.DBVersion != "10.6" {
 		t.Fatalf("got %+v", s)
 	}
-	if s.Hostnames[0] != "ee249-qa.ddev.site" || s.SearchVersion != "latest" || s.NodeVersion != "24" || s.Webserver != "nginx-fpm" {
+	if s.Hostnames[0] != "ee249-qa.md.site" || s.Hostnames[1] != "ee249-qa.ddev.site" || s.SearchVersion != "latest" || s.NodeVersion != "24" || s.Webserver != "nginx-fpm" {
 		t.Fatalf("got %+v", s)
 	}
 	if !has(s.Addons, "redis") || !has(s.Addons, "opensearch") {
@@ -38,7 +38,7 @@ func TestLoadPfsm248(t *testing.T) {
 
 func TestLoadHostnames(t *testing.T) {
 	s := load(t, "site-apache")
-	want := []string{"site-apache.ddev.site", "local.example.test"}
+	want := []string{"site-apache.md.site", "site-apache.ddev.site", "local.example.test"}
 	if strings.Join(s.Hostnames, ",") != strings.Join(want, ",") {
 		t.Fatalf("got %v", s.Hostnames)
 	}
@@ -55,7 +55,7 @@ func TestLoadAdditionalHostnames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(s.Hostnames, ",") != "a.ddev.site,b.ddev.site,c.test" {
+	if strings.Join(s.Hostnames, ",") != "a.md.site,a.ddev.site,b.md.site,c.test" {
 		t.Fatalf("got %v", s.Hostnames)
 	}
 	if !has(s.Addons, "mutagen") {
@@ -189,7 +189,7 @@ func TestLoadNameDefaultsToDirBase(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if s.Name != "my-shop" || s.Hostnames[0] != "my-shop.ddev.site" {
+		if s.Name != "my-shop" || s.Hostnames[0] != "my-shop.md.site" || s.Hostnames[1] != "my-shop.ddev.site" {
 			t.Fatalf("got %+v", s)
 		}
 	}

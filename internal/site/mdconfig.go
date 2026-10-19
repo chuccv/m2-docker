@@ -61,6 +61,12 @@ var (
 	codeRe = regexp.MustCompile(`^[a-z0-9_]+$`)
 )
 
+const Domain = "md.site"
+
+func DefaultHosts(name string) []string {
+	return []string{name + "." + Domain, name + ".ddev.site"}
+}
+
 func NormalizeName(folder string) string {
 	return strings.ReplaceAll(strings.ToLower(folder), "_", "-")
 }
@@ -111,7 +117,7 @@ func loadMD(root string) (Site, error) {
 	default:
 		return Site{}, fmt.Errorf("%s: webserver must be nginx or apache, got %q", mdConfigPath(root), c.Webserver)
 	}
-	hostnames := []string{c.Name + ".ddev.site"}
+	hostnames := DefaultHosts(c.Name)
 	for i, h := range c.Hostnames {
 		h = strings.ToLower(h)
 		if !hostRe.MatchString(h) {

@@ -164,7 +164,7 @@ func TestXhprofOnPrintsURL(t *testing.T) {
 		t.Fatal(err)
 	}
 	want(t, f, "docker", "exec", "-u", "1000", "ddev-ee249-qa-web", "sh", "-c", toggleScript("xhprof", true))
-	if got := out.String(); got != "https://ee249-qa.ddev.site:8142\n" {
+	if got := out.String(); got != "https://ee249-qa.md.site:8142\n" {
 		t.Fatalf("got %q", got)
 	}
 }

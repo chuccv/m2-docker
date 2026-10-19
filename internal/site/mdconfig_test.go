@@ -49,7 +49,7 @@ func TestLoadMDDefaults(t *testing.T) {
 	if s.Name != "demo-store" || s.NodeVersion != "22" || s.Type != "magento2" {
 		t.Fatalf("got %+v", s)
 	}
-	if strings.Join(s.Hostnames, ",") != "demo-store.ddev.site,x.test" {
+	if strings.Join(s.Hostnames, ",") != "demo-store.md.site,demo-store.ddev.site,x.test" {
 		t.Fatalf("hostnames %v", s.Hostnames)
 	}
 	if len(s.Addons) != 0 || s.SearchVersion != "" {
@@ -138,7 +138,7 @@ func TestFindByCwdMDOnly(t *testing.T) {
 
 func TestLoadWebsites(t *testing.T) {
 	s := load(t, "md-multi")
-	if strings.Join(s.Hostnames, ",") != "shop.ddev.site,b2b.shop.ddev.site,fr.shop.ddev.site" {
+	if strings.Join(s.Hostnames, ",") != "shop.md.site,shop.ddev.site,b2b.shop.ddev.site,fr.shop.ddev.site" {
 		t.Fatalf("hostnames %v", s.Hostnames)
 	}
 	if len(s.Websites) != 3 || s.Websites[1] != (Website{Host: "b2b.shop.ddev.site", Code: "b2b", Type: "website"}) || s.Websites[2].Type != "store" {
@@ -190,7 +190,7 @@ func TestLoadWebsitesNamesOffendingEntry(t *testing.T) {
 
 func TestLoadWebsitesLowercasesHost(t *testing.T) {
 	s, err := loadWebsites(t, "  - host: Shop.DDEV.site\n    code: shop_2\n")
-	if err != nil || s.Websites[0].Host != "shop.ddev.site" || s.Hostnames[1] != "shop.ddev.site" {
+	if err != nil || s.Websites[0].Host != "shop.ddev.site" || s.Hostnames[2] != "shop.ddev.site" {
 		t.Fatalf("%v %+v", err, s)
 	}
 }
@@ -199,7 +199,7 @@ func TestLoadHostnamesValidatedLowercasedDeduped(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "name: shop\nhostnames:\n  - Extra.DDEV.site\n  - extra.ddev.site\n  - shop.ddev.site\n")
 	s, err := Load(dir)
-	if err != nil || strings.Join(s.Hostnames, ",") != "shop.ddev.site,extra.ddev.site" {
+	if err != nil || strings.Join(s.Hostnames, ",") != "shop.md.site,shop.ddev.site,extra.ddev.site" {
 		t.Fatalf("%v %v", err, s.Hostnames)
 	}
 	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "name: shop\nhostnames:\n  - \"a;b.ddev.site\"\n")

@@ -112,7 +112,7 @@ func TestFromDDEVAdditionalHostnames(t *testing.T) {
 	fx := msetup(t)
 	s, _ := site.Load(fx.root)
 	c := FromDDEV(s)
-	if !reflect.DeepEqual(c.Hostnames, []string{"shop.ddev.site"}) {
+	if !reflect.DeepEqual(c.Hostnames, []string{"shop.md.site"}) {
 		t.Fatalf("%v", c.Hostnames)
 	}
 }

@@ -114,7 +114,7 @@ func TestSitesView(t *testing.T) {
 	}
 	views := decodeSites(t, r.Body.Bytes())
 	qa := views["ee249-qa"]
-	if qa.URLs["storefront"] != "https://ee249-qa.ddev.site:9443" || qa.URLs["admin"] != "https://ee249-qa.ddev.site:9443/admin" || qa.URLs["mailpit"] != "https://ee249-qa.ddev.site:8026" || qa.URLs["xhgui"] != "https://ee249-qa.ddev.site:8142" {
+	if qa.URLs["storefront"] != "https://ee249-qa.md.site:9443" || qa.URLs["admin"] != "https://ee249-qa.md.site:9443/admin" || qa.URLs["mailpit"] != "https://ee249-qa.md.site:8026" || qa.URLs["xhgui"] != "https://ee249-qa.md.site:8142" {
 		t.Fatalf("urls: %v", qa.URLs)
 	}
 	if qa.Status != "running" || qa.Blocked != "" || qa.PHP != "8.5" {
@@ -300,8 +300,8 @@ func TestDdevSiteLinksUseDdevPorts(t *testing.T) {
 	defer func() { ddevGlobalConfig = old }()
 	f := &run.FakeRunner{Out: map[string]string{"docker ps --format " + psFormat: "|ddev-busy\n"}}
 	for _, tc := range []struct{ cfg, base, mail, xh string }{
-		{filepath.Join(t.TempDir(), "missing.yaml"), "https://%s.ddev.site", "https://%s.ddev.site:8026", "https://%s.ddev.site:8142"},
-		{ddevCfg(t, "router_https_port: \"8443\"\nmailpit_https_port: \"9026\"\nxhgui_https_port: \"9142\"\n"), "https://%s.ddev.site:8443", "https://%s.ddev.site:9026", "https://%s.ddev.site:9142"},
+		{filepath.Join(t.TempDir(), "missing.yaml"), "https://%s.md.site", "https://%s.md.site:8026", "https://%s.md.site:8142"},
+		{ddevCfg(t, "router_https_port: \"8443\"\nmailpit_https_port: \"9026\"\nxhgui_https_port: \"9142\"\n"), "https://%s.md.site:8443", "https://%s.md.site:9026", "https://%s.md.site:9142"},
 	} {
 		ddevGlobalConfig = tc.cfg
 		h := newServer(home, f, &fakeActions{}, []string{root})
@@ -312,7 +312,7 @@ func TestDdevSiteLinksUseDdevPorts(t *testing.T) {
 				t.Fatalf("%s: %v", n, u)
 			}
 		}
-		if u := views["mdstopped"].URLs; u["storefront"] != "https://mdstopped.ddev.site:9443" {
+		if u := views["mdstopped"].URLs; u["storefront"] != "https://mdstopped.md.site:9443" {
 			t.Fatalf("md source: %v", u)
 		}
 	}
@@ -347,10 +347,10 @@ func TestPhpMyAdminLink(t *testing.T) {
 	ddevGlobalConfig = filepath.Join(t.TempDir(), "missing.yaml")
 	h := newServer(home, &run.FakeRunner{Out: map[string]string{}}, &fakeActions{}, []string{root})
 	views := decodeSites(t, do(h, "GET", "/api/sites", "", nil).Body.Bytes())
-	if views["withpma"].URLs["phpmyadmin"] != "https://withpma.ddev.site:8037" {
+	if views["withpma"].URLs["phpmyadmin"] != "https://withpma.md.site:8037" {
 		t.Fatalf("ddev: %v", views["withpma"].URLs)
 	}
-	if views["mdpma"].URLs["phpmyadmin"] != "https://mdpma.ddev.site:9037" {
+	if views["mdpma"].URLs["phpmyadmin"] != "https://mdpma.md.site:9037" {
 		t.Fatalf("md: %v", views["mdpma"].URLs)
 	}
 	if _, ok := views["nopma"].URLs["phpmyadmin"]; ok {

@@ -27,14 +27,14 @@ After rebuilding, a running `md ui` (port 9901) still serves the old binary unti
 - `internal/website` — multi-website/store: renders nginx/apache run-code maps and locks base URLs into `env.php` via `config:set --lock-env`.
 - `internal/ui` — `md ui`: stdlib HTTP server, embedded `web/` (plain JS, no build step), live stats over SSE from one `docker stats`/`docker events` stream. POSTs require header `X-MD: 1` and loopback Origin. Actions go through `uiActions` in `internal/cmd/ui.go`, serialized by an in-process mutex.
 - `images/php` — embedded Dockerfile context for `md/php:<version>`; `up` rebuilds only when the context hash label changes.
-- State: `~/.md/state.json` (known sites + search versions in use). Not locked across processes: concurrent `md up`/`stop` from different processes can overwrite each other.
+- State: `~/.md/state.json` (known sites + search versions in use). `up`/`stop`/`restart`/`poweroff` hold an exclusive `flock` on `~/.md/md.lock` (`lockHome` in `internal/cmd/state.go`); never call one locked entry point from inside another.
 
 ## Contracts other tools depend on
 
 Do not change without updating QA tooling (`qa-agent-e2e`, `agent-site.sh`, skills):
 
 - Container names `ddev-<name>-web|db|redis`; DB user/password/database `db`/`db`/`db`; web uid 1000, Magento root `/var/www/html`.
-- Hostnames `<name>.ddev.site`; DB volume `<name>-mariadb`, Redis volume `ddev-<name>_redis` reused as-is.
+- Hostnames `<name>.md.site` (base URL, needs `/etc/hosts` via `md hosts --all`) with `<name>.ddev.site` kept as an alias; DB volume `<name>-mariadb`, Redis volume `ddev-<name>_redis` reused as-is.
 - Never delete DB volumes automatically; `md clean` deletes only after the user types `yes`.
 
 ## Conventions

@@ -58,5 +58,5 @@ func valid(path string, hosts []string) bool {
 }
 
 func EnsureDefaultCert(home string, r run.Runner) (crt, key string, err error) {
-	return EnsureCert(site.Site{Name: "_default", Hostnames: []string{"*.ddev.site", "ddev.site"}}, home, r)
+	return EnsureCert(site.Site{Name: "_default", Hostnames: []string{"*." + site.Domain, site.Domain, "*.ddev.site", "ddev.site"}}, home, r)
 }

@@ -112,7 +112,7 @@ func TestEnsureDefaultCert(t *testing.T) {
 	if crt != filepath.Join(home, "certs", "_default.crt") || key != filepath.Join(home, "certs", "_default.key") {
 		t.Fatalf("paths %s %s", crt, key)
 	}
-	want := "mkcert -cert-file " + crt + " -key-file " + key + " *.ddev.site ddev.site"
+	want := "mkcert -cert-file " + crt + " -key-file " + key + " *.md.site md.site *.ddev.site ddev.site"
 	if len(r.Calls) != 1 || strings.Join(r.Calls[0], " ") != want {
 		t.Fatalf("calls %v", r.Calls)
 	}
@@ -122,7 +122,7 @@ func TestEnsureDefaultCertSkipsValid(t *testing.T) {
 	home := t.TempDir()
 	old := s
 	s = site.Site{Name: "_default"}
-	writeCert(t, home, []string{"*.ddev.site", "ddev.site"}, time.Now().Add(90*24*time.Hour))
+	writeCert(t, home, []string{"*.md.site", "md.site", "*.ddev.site", "ddev.site"}, time.Now().Add(90*24*time.Hour))
 	s = old
 	r := &run.FakeRunner{}
 	if _, _, err := EnsureDefaultCert(home, r); err != nil {

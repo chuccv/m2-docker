@@ -229,7 +229,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 	if err := stream(r, name, "rm", "-rf", "/tmp/md-install"); err != nil {
 		return err
 	}
-	url := baseURL(name+".ddev.site", ports.HTTPS)
+	url := baseURL(name+"."+site.Domain, ports.HTTPS)
 	args := []string{"setup:install",
 		"--base-url=" + url, "--base-url-secure=" + url, "--use-secure=1", "--use-secure-admin=1",
 		"--db-host=db", "--db-name=db", "--db-user=db", "--db-password=db"}

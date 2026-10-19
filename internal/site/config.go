@@ -64,10 +64,10 @@ func Load(root string) (Site, error) {
 		DBVersion:   c.Database.Version,
 		NodeVersion: c.NodeVersion,
 		Webserver:   c.Webserver,
-		Hostnames:   []string{c.Name + ".ddev.site"},
+		Hostnames:   DefaultHosts(c.Name),
 	}
 	for _, h := range c.AdditionalHostnames {
-		s.Hostnames = append(s.Hostnames, h+".ddev.site")
+		s.Hostnames = append(s.Hostnames, h+"."+Domain)
 	}
 	s.Hostnames = append(s.Hostnames, c.AdditionalFQDNs...)
 

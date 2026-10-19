@@ -86,8 +86,8 @@ func TestInstallOrderEmptyDir(t *testing.T) {
 		web + "composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition=2.4.8 /tmp/md-install",
 		web + "cp -a /tmp/md-install/. /var/www/html/",
 		web + "php bin/magento setup:install",
-		"docker exec ddev-shop-web php bin/magento config:set --lock-env --scope=default web/unsecure/base_url https://shop.ddev.site/",
-		"docker exec ddev-shop-web php bin/magento config:set --lock-env --scope=default web/secure/base_url https://shop.ddev.site/",
+		"docker exec ddev-shop-web php bin/magento config:set --lock-env --scope=default web/unsecure/base_url https://shop.md.site/",
+		"docker exec ddev-shop-web php bin/magento config:set --lock-env --scope=default web/secure/base_url https://shop.md.site/",
 		web + "php bin/magento module:disable Magento_AdminAdobeImsTwoFactorAuth Magento_TwoFactorAuth",
 		web + "php bin/magento setup:upgrade",
 		web + "php bin/magento deploy:mode:set developer",
@@ -115,7 +115,7 @@ func TestInstallOrderEmptyDir(t *testing.T) {
 		t.Errorf("rm count %d", n)
 	}
 	inst := cs[idx(cs, "setup:install")]
-	for _, w := range []string{"--base-url=https://shop.ddev.site/", "--base-url-secure=https://shop.ddev.site/", "--use-secure=1", "--use-secure-admin=1",
+	for _, w := range []string{"--base-url=https://shop.md.site/", "--base-url-secure=https://shop.md.site/", "--use-secure=1", "--use-secure-admin=1",
 		"--db-host=db", "--opensearch-index-prefix=shop", "--session-save-redis-db=2", "--page-cache-redis-db=1", "--admin-user=admin",
 		"--admin-password=admin123", "--admin-firstname=Admin", "--use-rewrites=1", "--timezone=UTC"} {
 		if !strings.Contains(inst, w) {
@@ -192,7 +192,7 @@ func TestInstallBaseURLDevPort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if idx(cs, "--base-url=https://shop.ddev.site:9443/") < 0 || idx(cs, "web/secure/base_url https://shop.ddev.site:9443/") < 0 {
+	if idx(cs, "--base-url=https://shop.md.site:9443/") < 0 || idx(cs, "web/secure/base_url https://shop.md.site:9443/") < 0 {
 		t.Fatalf("calls %v", cs)
 	}
 }
