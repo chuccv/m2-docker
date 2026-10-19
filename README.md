@@ -40,6 +40,23 @@ State lives in `~/.md`. Snapshots go to `~/.md/sites/<name>/snapshots/`.
       xhgui_https: 8142
     bind_all_interfaces: false   # true publishes router ports on 0.0.0.0, default is 127.0.0.1
 
+## MCP server
+
+`md mcp` serves an MCP server over stdio so Claude Code can drive md and Magento sites.
+
+    claude mcp add -s user m2 -- md mcp
+
+Every tool except `sites_list` takes the site name as `site`. Output is capped at about 20 KB.
+
+- `sites_list`, `site_describe`
+- `site_up`, `site_stop`, `site_restart`
+- `magento` (`args`), `exec` (`cmd`, run with `bash -lc`), `sql` (`query`, writes allowed)
+- `logs` (`file`: `exception`, `system`, `debug` or `report` with `id`; `lines`, `grep`)
+- `snapshot_create`, `snapshot_list`, `snapshot_restore`
+- `xdebug`, `xhprof` (`on`; xhprof returns the XHGui URL)
+
+There are no tools for `clean`, `poweroff`, `install` or `migrate`.
+
 ## V1 limits
 
 - MariaDB only (no MySQL)
