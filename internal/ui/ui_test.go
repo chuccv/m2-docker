@@ -104,6 +104,7 @@ func TestSitesView(t *testing.T) {
 	writeSite(t, root, "ee249-qa", "name: ee249-qa\ntype: magento2\nphp_version: \"8.5\"\nwebserver_type: nginx-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n")
 	writeSite(t, root, "site-apache", "name: site-apache\ntype: magento2\nphp_version: \"8.3\"\nwebserver_type: apache-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n")
 	writeSite(t, root, "busy", "name: busy\ntype: magento2\nphp_version: \"8.3\"\nwebserver_type: nginx-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n")
+	writeSite(t, root, "plain-php", "name: plain-php\ntype: php\nphp_version: \"7.2\"\nwebserver_type: nginx-fpm\ndatabase:\n  type: mariadb\n  version: \"10.2\"\n")
 	os.WriteFile(filepath.Join(home, "config.yaml"), []byte("ports:\n  https: 9443\n"), 0o644)
 	f := &run.FakeRunner{Out: map[string]string{"docker ps --format " + psFormat: "|ddev-busy\ntrue|md-ee249-qa\n|md-shared\n"}}
 	h := newServer(home, f, &fakeActions{}, []string{root})
@@ -129,6 +130,9 @@ func TestSitesView(t *testing.T) {
 	b := views["busy"]
 	if b.Status != "ddev" || b.Engine != "ddev" || b.Blocked != "" {
 		t.Fatalf("busy: %+v", b)
+	}
+	if p := views["plain-php"]; p.Source != "ddev" || !strings.Contains(p.Blocked, `"php"`) || p.Note != "" {
+		t.Fatalf("plain-php: %+v", p)
 	}
 }
 

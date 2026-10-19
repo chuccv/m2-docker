@@ -172,7 +172,11 @@ func (s *server) siteViews() ([]SiteView, error) {
 		}
 		if err := site.Supported(x); err != nil {
 			reason := strings.ReplaceAll(err.Error(), "\n", "; ")
-			if v.Source == "md" {
+			pinned := x
+			if pinned.SearchVersion == "latest" {
+				pinned.SearchVersion = ""
+			}
+			if v.Source == "md" || site.Supported(pinned) != nil {
 				v.Blocked = reason
 			} else {
 				v.Note = reason

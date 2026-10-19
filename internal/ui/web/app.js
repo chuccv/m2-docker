@@ -139,7 +139,7 @@
     if (s.source === "ddev" && !s.blocked) badge(id, "md migrate", "Run md migrate in the site root to move this site to md");
     card.appendChild(id);
     var amber = s.source === "ddev" || !!s.blocked;
-    card.appendChild(actionBtn("Up", amber ? "dark amber" : "dark", s.name, "up", wait || !!s.blocked));
+    card.appendChild(actionBtn("Up", amber ? "dark amber" : "dark", s.name, "up", wait || !!s.blocked || !!s.note));
     return card;
   }
 
