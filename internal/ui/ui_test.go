@@ -219,11 +219,11 @@ func TestOneActionPerSite(t *testing.T) {
 }
 
 func TestDisk(t *testing.T) {
-	out := `{"Images":[{"Repository":"md/php","Tag":"8.5","Size":"713MB","Containers":"1"}],"Volumes":[{"Name":"pfsm248-mariadb","Size":"186.8MB"},{"Name":"md-node-24","Size":"146MB"}]}`
+	out := `{"Images":[{"Repository":"md/php","Tag":"8.5","Size":"713MB","Containers":"1"}],"Volumes":[{"Name":"pfsm248-mariadb","Size":"186.8MB"},{"Name":"md-node-24","Size":"146MB"},{"Name":"ddev-ee249-qa_redis","Size":"5MB"}]}`
 	f := &run.FakeRunner{Out: map[string]string{"docker system df -v --format {{json .}}": out}}
 	h := NewServer(t.TempDir(), f, &fakeActions{})
 	r := do(h, "GET", "/api/disk", "", nil)
-	if r.Code != 200 || !strings.Contains(r.Body.String(), `"site":"pfsm248"`) || !strings.Contains(r.Body.String(), "md/php") {
+	if r.Code != 200 || !strings.Contains(r.Body.String(), `"site":"pfsm248"`) || !strings.Contains(r.Body.String(), `"site":"ee249-qa"`) || !strings.Contains(r.Body.String(), "md/php") {
 		t.Fatalf("%d %s", r.Code, r.Body)
 	}
 }
