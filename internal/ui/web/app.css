@@ -24,7 +24,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .search input{border:0;outline:0;font:inherit;background:transparent;width:100%;color:var(--fg);padding:0}
 input::placeholder{color:var(--muted);opacity:1}
 .pill-input{font:inherit;background:var(--card);border:1px solid var(--ctl);border-radius:999px;padding:9px 16px;color:var(--fg)}
-.grid{display:grid;gap:16px;align-items:start}
+.grid{display:grid;gap:16px}
 .grid.running{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
 .grid.stopped{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .grid.disk{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
@@ -45,7 +45,7 @@ input::placeholder{color:var(--muted);opacity:1}
 .links{display:flex;flex-wrap:wrap;gap:6px 12px;font-weight:600;font-size:13px}
 a{color:var(--link);text-decoration:none}
 a:hover{color:var(--link-h);text-decoration:underline}
-.btns{display:flex;gap:8px}
+.btns{display:flex;gap:8px;margin-top:auto}
 .btns button{flex:1;background:var(--card);border:1px solid var(--ctl);border-radius:10px;padding:9px}
 .btns button:hover:not(:disabled){border-color:var(--fg)}
 .off{background:var(--off-bg);border:1px dashed var(--off-line);border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0}
