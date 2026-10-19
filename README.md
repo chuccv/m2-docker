@@ -25,6 +25,8 @@
     md snapshot              # dump the database (--list, restore <file>)
     md clean                 # remove unused images, build cache, volumes
 
+Commands find the site by walking up from the current directory to `.md/config.yaml` or `.ddev/config.yaml`, then use its `name` for container names (`ddev-<name>-db` for `md mysql`). From anywhere else pass `-s <name>`, e.g. `md -s shop mysql`.
+
 State lives in `~/.md`. Snapshots go to `~/.md/sites/<name>/snapshots/`.
 
 ## Configuration
@@ -57,12 +59,37 @@ Every tool except `sites_list` takes the site name as `site`. Output is capped a
 
 There are no tools for `clean`, `poweroff`, `install` or `migrate`.
 
-## V1 limits
+## Supported
 
-- MariaDB only (no MySQL)
-- nginx only
-- No varnish, rabbitmq, elasticsearch or mutagen
-- Only the DDEV add-ons opensearch, redis and xhgui are understood
+- Web server: nginx-fpm or apache-fpm, PHP 8.1 to 8.5
+- Database: MariaDB or MySQL
+- Search: OpenSearch or Elasticsearch
+- Redis, Varnish, phpMyAdmin, Node, Mailpit, Xdebug, XHProf
+- Not supported: RabbitMQ, custom DDEV compose files (`md migrate --ignore-extra-compose` skips them)
+
+## How it works
+
+md is one static Go binary. It writes plain Docker Compose files and lets Docker do the rest; there is no daemon of its own.
+
+| Piece | What md uses | Why |
+|---|---|---|
+| CLI | Go, cobra | single binary, no runtime |
+| Orchestration | `docker compose` v2, one project per site (`md-<name>`) plus `md-shared` | stock tooling, easy to inspect with `docker compose ls` |
+| Routing | one Traefik v3 container (`md-router`) with a file-provider dynamic config | one router for every site, hostnames go to the right web container |
+| TLS | mkcert local CA, one certificate covering all site hostnames | green padlock in browsers and Playwright |
+| Web image | `md/php:<version>` built locally from an embedded Dockerfile, shared by every site on that PHP version; nginx or apache, php-fpm and Mailpit run under tini | one image per PHP version instead of one per site |
+| Image rebuilds | the image carries a hash label of its build context; `md up` rebuilds only when the hash changes and prunes the old image | upgrades apply on the next `md up` |
+| Database | official `mariadb`/`mysql` images, one container per site, data in the site's `<name>-mariadb` volume | sites can pin different versions; DDEV volumes are reused without copying |
+| Search | one shared OpenSearch/Elasticsearch container per version (`md-opensearch-<v>`), each site gets its own index prefix | one JVM instead of one per site |
+| Node | the official `node:<major>-slim` files copied once into a `md-node-<major>` volume, mounted read-only into web containers | no Node install in the PHP image |
+| Profiling | XHProf with perftools/php-profiler, one shared XHGui container | `md xhprof on` and open XHGui on the site hostname |
+| Snapshots | `mariadb-dump`/`mysqldump` piped through gzip to `~/.md/sites/<name>/snapshots/` | restore takes a pre-restore snapshot first |
+| Config | `.md/config.yaml` in the site, generated from `.ddev/config.yaml` by `md migrate` | `.ddev/` is never written |
+| Magento settings | `bin/magento config:set --lock-env` for base URLs and search prefix | changes land in `env.php`, not the database |
+| GUI | `md ui`: stdlib HTTP server with embedded HTML/JS, live stats over Server-Sent Events from one shared `docker stats` and `docker events` stream | loopback only, actions need a custom header |
+| AI | `md mcp`: MCP server over stdio using the official Go SDK | lets an assistant run md and Magento commands |
+
+Containers use `restart: "no"`: nothing starts on boot, run `md up` when you need a site.
 
 ## Compatibility with DDEV
 
