@@ -186,12 +186,7 @@ func (m mcpServer) stop(in siteIn) (string, error) {
 }
 
 func (m mcpServer) restart(in siteIn) (string, error) {
-	return m.simple(in, func(e *env, n string) error {
-		if err := e.stopByName(n); err != nil {
-			return err
-		}
-		return e.upByName(n)
-	})
+	return m.simple(in, func(e *env, n string) error { return e.restartByName(n) })
 }
 
 func (m mcpServer) execWeb(name string, tail ...string) (string, error) {

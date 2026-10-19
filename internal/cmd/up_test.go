@@ -170,6 +170,53 @@ func TestStopNoVolumesFlag(t *testing.T) {
 	}
 }
 
+func TestUpStartsOnlyOwnSearchContainer(t *testing.T) {
+	e, f, home := upEnv(t)
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	if index(calls(f), strings.Replace(sharedUp, "%s", home, 1)+" md-router md-xhgui md-opensearch-2.19.1") < 0 {
+		t.Fatalf("%s", strings.Join(calls(f), "\n"))
+	}
+}
+
+func TestStopStopsSearchWhenUnused(t *testing.T) {
+	e, f, _ := upEnv(t)
+	if err := exec(t, e, "stop"); err != nil {
+		t.Fatal(err)
+	}
+	if index(calls(f), "docker stop md-opensearch-2.19.1") < 0 {
+		t.Fatalf("%s", strings.Join(calls(f), "\n"))
+	}
+}
+
+func TestStopKeepsSearchUsedByRunningSite(t *testing.T) {
+	e, f, home := upEnv(t)
+	other := filepath.Join(t.TempDir(), "other")
+	os.MkdirAll(filepath.Join(other, ".md"), 0o755)
+	os.WriteFile(filepath.Join(other, ".md", "config.yaml"), []byte("name: other\ntype: magento2\nphp: \"8.4\"\nsearch: 2.19.1\ndatabase:\n  type: mariadb\n  version: \"11.4\"\n"), 0o644)
+	if err := saveState(home, state{Sites: []siteRef{{Name: "other", Root: other}}}); err != nil {
+		t.Fatal(err)
+	}
+	f.Out["docker compose ls --format json"] = `[{"Name":"md-other","Status":"running(2)"}]`
+	if err := exec(t, e, "stop"); err != nil {
+		t.Fatal(err)
+	}
+	if index(calls(f), "docker stop md-opensearch") >= 0 {
+		t.Fatalf("%s", strings.Join(calls(f), "\n"))
+	}
+}
+
+func TestRestartKeepsSearchRunning(t *testing.T) {
+	e, f, _ := upEnv(t)
+	if err := exec(t, e, "restart"); err != nil {
+		t.Fatal(err)
+	}
+	if index(calls(f), "docker stop md-opensearch") >= 0 {
+		t.Fatalf("%s", strings.Join(calls(f), "\n"))
+	}
+}
+
 func TestUpRebuildsOnHashMismatch(t *testing.T) {
 	e, f, _ := upEnv(t)
 	f.Out[imgKey] = "stale"

@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/chuccv/m2-docker/internal/site"
 	"github.com/chuccv/m2-docker/internal/stack"
 )
 
@@ -11,6 +12,17 @@ func (e *env) stopSite(home, name string, searchVersions []string) error {
 }
 
 func (e *env) stopByName(name string) error {
+	return e.stop(name, true)
+}
+
+func (e *env) restartByName(name string) error {
+	if err := e.stop(name, false); err != nil {
+		return err
+	}
+	return e.upByName(name)
+}
+
+func (e *env) stop(name string, stopSearch bool) error {
 	s, err := e.findSite(name)
 	if err != nil {
 		return err
@@ -27,7 +39,27 @@ func (e *env) stopByName(name string) error {
 	if key := s.SearchKey(); key != "" && !hasString(versions, key) {
 		versions = append(append([]string{}, versions...), key)
 	}
-	return e.stopSite(home, s.Name, versions)
+	if err := e.stopSite(home, s.Name, versions); err != nil {
+		return err
+	}
+	key := s.SearchKey()
+	if !stopSearch || key == "" {
+		return nil
+	}
+	running, err := e.runningProjects()
+	if err != nil {
+		return err
+	}
+	for _, ref := range st.Sites {
+		if ref.Name == s.Name || !running["md-"+ref.Name] {
+			continue
+		}
+		if o, err := site.Load(ref.Root); err == nil && o.SearchKey() == key {
+			return nil
+		}
+	}
+	e.runner.Run("docker", "stop", site.SearchContainer(key))
+	return nil
 }
 
 func newStopCmd(e *env) *cobra.Command {
@@ -47,11 +79,7 @@ func newRestartCmd(e *env) *cobra.Command {
 		Short: "Stop then start a site",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			name := nameArg(args)
-			if err := e.stopByName(name); err != nil {
-				return err
-			}
-			return e.upByName(name)
+			return e.restartByName(nameArg(args))
 		},
 	}
 }

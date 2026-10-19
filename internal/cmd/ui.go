@@ -38,10 +38,7 @@ func (a uiActions) Poweroff() error {
 func (a uiActions) Restart(name string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if err := a.e.stopByName(name); err != nil {
-		return err
-	}
-	return a.e.upByName(name)
+	return a.e.restartByName(name)
 }
 
 func newUICmd(e *env) *cobra.Command {

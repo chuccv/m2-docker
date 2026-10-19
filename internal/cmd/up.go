@@ -206,7 +206,11 @@ func (e *env) up(s site.Site, home string) error {
 	if err := writeFile(sharedFile, shared); err != nil {
 		return err
 	}
-	if err := e.runner.Stream("docker", "compose", "-p", "md-shared", "-f", sharedFile, "up", "-d"); err != nil {
+	services := []string{"compose", "-p", "md-shared", "-f", sharedFile, "up", "-d", "md-router", "md-xhgui"}
+	if key := s.SearchKey(); key != "" {
+		services = append(services, site.SearchContainer(key))
+	}
+	if err := e.runner.Stream("docker", services...); err != nil {
 		return err
 	}
 	dcrt, dkey, err := tls.EnsureDefaultCert(home, e.runner)
