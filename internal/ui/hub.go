@@ -198,6 +198,9 @@ func (h *hub) emitStats() {
 		rows = append(rows, t.row)
 	}
 	h.rowsMu.Unlock()
+	if len(rows) == 0 {
+		return
+	}
 	data, err := json.Marshal(buildStats(rows, known))
 	if err != nil {
 		return

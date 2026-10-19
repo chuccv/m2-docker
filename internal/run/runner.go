@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 )
 
 type Runner interface {
@@ -48,6 +49,7 @@ func (ExecRunner) Pipe(stdin io.Reader, stdout io.Writer, name string, args ...s
 }
 
 type FakeRunner struct {
+	mu     sync.Mutex
 	Calls  [][]string
 	Out    map[string]string
 	Err    map[string]error
@@ -72,6 +74,8 @@ func (f *FakeRunner) Pipe(stdin io.Reader, stdout io.Writer, name string, args .
 
 func (f *FakeRunner) Run(name string, args ...string) (string, error) {
 	call := append([]string{name}, args...)
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.Calls = append(f.Calls, call)
 	key := strings.Join(call, " ")
 	return f.Out[key], f.Err[key]
