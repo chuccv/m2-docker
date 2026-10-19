@@ -156,6 +156,11 @@ func (e *env) connect(args ...string) {
 }
 
 func (e *env) up(s site.Site, home string) error {
+	unlock, err := lockHome(home, e.writer())
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	cfg, err := config.Load(home)
 	if err != nil {
 		return err

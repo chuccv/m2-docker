@@ -3,10 +3,12 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
+	"syscall"
 )
 
 type siteRef struct {
@@ -46,6 +48,24 @@ func saveState(home string, st state) error {
 		return err
 	}
 	return os.WriteFile(statePath(home), data, 0o644)
+}
+
+func lockHome(home string, w io.Writer) (func(), error) {
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		return nil, err
+	}
+	f, err := os.OpenFile(filepath.Join(home, "md.lock"), os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return nil, err
+	}
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		fmt.Fprintln(w, "đang chờ lệnh md khác chạy xong...")
+		if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+			f.Close()
+			return nil, err
+		}
+	}
+	return func() { f.Close() }, nil
 }
 
 func (st *state) add(s siteRef, search string) {

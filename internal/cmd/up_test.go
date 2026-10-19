@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -522,5 +524,33 @@ func TestMigrateCmdNotesMutagenOnce(t *testing.T) {
 	}
 	if n := strings.Count(e.out.(*strings.Builder).String(), "mutagen bỏ qua trên Linux"); n != 1 {
 		t.Fatalf("note printed %d times", n)
+	}
+}
+
+func TestStateChangingCommandsWaitForLock(t *testing.T) {
+	for _, cmd := range []string{"up", "stop", "restart", "poweroff"} {
+		t.Run(cmd, func(t *testing.T) {
+			e, _, home := upEnv(t)
+			unlock, err := lockHome(home, io.Discard)
+			if err != nil {
+				t.Fatal(err)
+			}
+			done := make(chan error, 1)
+			go func() { done <- exec(t, e, cmd) }()
+			select {
+			case <-done:
+				t.Fatal("ran while the lock was held")
+			case <-time.After(200 * time.Millisecond):
+			}
+			unlock()
+			select {
+			case err := <-done:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("still blocked after unlock")
+			}
+		})
 	}
 }

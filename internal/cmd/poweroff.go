@@ -36,6 +36,11 @@ func (e *env) poweroff() error {
 	if err != nil {
 		return err
 	}
+	unlock, err := lockHome(home, e.writer())
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	st, err := loadState(home)
 	if err != nil {
 		return err
