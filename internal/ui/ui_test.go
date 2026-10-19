@@ -228,6 +228,18 @@ func TestDisk(t *testing.T) {
 	}
 }
 
+func TestDiskUntaggedImageShowsIDAndUser(t *testing.T) {
+	out := `{"Images":[{"ID":"sha256:62dc4e39cb24aa","Repository":"<none>","Tag":"<none>","Size":"720MB","Containers":"1"}],"Volumes":[]}`
+	f := &run.FakeRunner{Out: map[string]string{
+		"docker system df -v --format {{json .}}":                         out,
+		"docker ps -a --filter ancestor=62dc4e39cb24 --format {{.Names}}": "ddev-shop-web\n",
+	}}
+	r := do(NewServer(t.TempDir(), f, &fakeActions{}), "GET", "/api/disk", "", nil)
+	if !strings.Contains(r.Body.String(), `"tag":"62dc4e39cb24"`) || !strings.Contains(r.Body.String(), `"used_by":"ddev-shop-web"`) {
+		t.Fatalf("%s", r.Body)
+	}
+}
+
 func TestDdevActions(t *testing.T) {
 	root, home := t.TempDir(), t.TempDir()
 	cfg := "name: %s\ntype: magento2\nphp_version: \"8.3\"\nwebserver_type: apache-fpm\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"

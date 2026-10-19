@@ -158,7 +158,8 @@
   function refreshDisk() {
     api("GET", "/api/disk").then(function (d) {
       tiles("images", d.images.map(function (i) {
-        return { group: i.repo, name: i.tag, size: i.size, meta: +i.containers ? "in use: " + i.containers : "unused", idle: !+i.containers };
+        var used = +i.containers ? (i.used_by ? "used by " + i.used_by : "in use: " + i.containers) : "unused";
+        return { group: i.repo === "<none>" ? "untagged (old builds)" : i.repo, name: i.tag, size: i.size, meta: used, idle: !+i.containers };
       }));
       tiles("volumes", d.volumes.map(function (v) {
         return { group: v.site || "no site", name: v.name, size: v.size, meta: "", idle: !v.site };

@@ -210,6 +210,7 @@ type diskImage struct {
 	Tag        string `json:"tag"`
 	Size       string `json:"size"`
 	Containers string `json:"containers"`
+	UsedBy     string `json:"used_by,omitempty"`
 }
 
 type diskVolume struct {
@@ -237,7 +238,7 @@ func (s *server) handleDisk(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	var raw struct {
-		Images  []struct{ Repository, Tag, Size, Containers string }
+		Images  []struct{ ID, Repository, Tag, Size, Containers string }
 		Volumes []struct{ Name, Size string }
 	}
 	if err := json.Unmarshal([]byte(out), &raw); err != nil {
@@ -249,7 +250,17 @@ func (s *server) handleDisk(w http.ResponseWriter, _ *http.Request) {
 		Volumes []diskVolume `json:"volumes"`
 	}{[]diskImage{}, []diskVolume{}}
 	for _, i := range raw.Images {
-		res.Images = append(res.Images, diskImage{i.Repository, i.Tag, i.Size, i.Containers})
+		img := diskImage{Repo: i.Repository, Tag: i.Tag, Size: i.Size, Containers: i.Containers}
+		if i.Repository == "<none>" {
+			img.Tag = strings.TrimPrefix(i.ID, "sha256:")
+			if len(img.Tag) > 12 {
+				img.Tag = img.Tag[:12]
+			}
+			if users, err := s.r.Run("docker", "ps", "-a", "--filter", "ancestor="+img.Tag, "--format", "{{.Names}}"); err == nil {
+				img.UsedBy = strings.Join(strings.Fields(users), ", ")
+			}
+		}
+		res.Images = append(res.Images, img)
 	}
 	for _, v := range raw.Volumes {
 		res.Volumes = append(res.Volumes, diskVolume{v.Name, v.Size, volumeSite(v.Name)})
