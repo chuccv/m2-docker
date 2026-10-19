@@ -261,6 +261,27 @@ func (e *env) up(s site.Site, home string) error {
 			fmt.Fprintf(e.writer(), "warning: %s reload: %v\n", reload[0], err)
 		}
 	}
+	e.connectShared(s)
+	if running, err := e.runningProjects(); err == nil {
+		for _, ref := range st.Sites {
+			if ref.Name == s.Name || !running["md-"+ref.Name] {
+				continue
+			}
+			if o, err := site.Load(ref.Root); err == nil {
+				e.connectShared(o)
+			}
+		}
+	}
+	if err := e.syncWebsites(s, cfg.Ports.HTTPS); err != nil {
+		fmt.Fprintf(e.writer(), "warning: websites sync: %v\n", err)
+	}
+	for _, h := range s.Hostnames {
+		fmt.Fprintln(e.writer(), siteURL(h, cfg.Ports.HTTPS))
+	}
+	return nil
+}
+
+func (e *env) connectShared(s site.Site) {
 	net := "md-" + s.Name + "_default"
 	if key := s.SearchKey(); key != "" {
 		e.connect("--alias", site.SearchAlias(key), net, site.SearchContainer(key))
@@ -271,13 +292,6 @@ func (e *env) up(s site.Site, home string) error {
 		aliases = append(aliases, "--alias", h)
 	}
 	e.connect(append(aliases, net, "md-router")...)
-	if err := e.syncWebsites(s, cfg.Ports.HTTPS); err != nil {
-		fmt.Fprintf(e.writer(), "warning: websites sync: %v\n", err)
-	}
-	for _, h := range s.Hostnames {
-		fmt.Fprintln(e.writer(), siteURL(h, cfg.Ports.HTTPS))
-	}
-	return nil
 }
 
 func (e *env) syncWebsites(s site.Site, httpsPort int) error {

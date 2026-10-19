@@ -180,6 +180,26 @@ func TestUpStartsOnlyOwnSearchContainer(t *testing.T) {
 	}
 }
 
+func TestUpReconnectsSharedToOtherRunningSites(t *testing.T) {
+	e, f, home := upEnv(t)
+	other := filepath.Join(t.TempDir(), "other")
+	os.MkdirAll(filepath.Join(other, ".md"), 0o755)
+	os.WriteFile(filepath.Join(other, ".md", "config.yaml"), []byte("name: other\ntype: magento2\nphp: \"8.4\"\nsearch: 2.19.1\nhostnames:\n  - other.ddev.site\ndatabase:\n  type: mariadb\n  version: \"11.4\"\n"), 0o644)
+	if err := saveState(home, state{Sites: []siteRef{{Name: "other", Root: other}}}); err != nil {
+		t.Fatal(err)
+	}
+	f.Out["docker compose ls --format json"] = `[{"Name":"md-other","Status":"running(2)"}]`
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	cs := calls(f)
+	for _, want := range []string{"docker network connect --alias opensearch md-other_default md-opensearch-2.19.1", "docker network connect --alias other.ddev.site md-other_default md-router"} {
+		if index(cs, want) < 0 {
+			t.Fatalf("missing %q:\n%s", want, strings.Join(cs, "\n"))
+		}
+	}
+}
+
 func TestStopStopsSearchWhenUnused(t *testing.T) {
 	e, f, _ := upEnv(t)
 	if err := exec(t, e, "stop"); err != nil {
