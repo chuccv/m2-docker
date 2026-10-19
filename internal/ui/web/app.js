@@ -134,23 +134,25 @@
     return api("GET", "/api/stats").then(function (s) { stats = s; render(); }).catch(function () {});
   }
 
-  function fill(id, rows) {
-    var tb = document.querySelector("#" + id + " tbody");
-    tb.textContent = "";
-    rows.forEach(function (cells) {
-      var tr = el("tr");
-      cells.forEach(function (c, i) { tr.appendChild(el("td", c.num ? "num" : "", c.t)); });
-      tb.appendChild(tr);
+  function tiles(id, items) {
+    var g = $(id);
+    g.textContent = "";
+    items.forEach(function (it) {
+      var t = el("div", it.idle ? "tile idle" : "tile");
+      t.appendChild(el("div", "tile-name", it.name));
+      t.appendChild(el("b", "", it.size));
+      t.appendChild(el("span", "", it.meta));
+      g.appendChild(t);
     });
   }
 
   function refreshDisk() {
     api("GET", "/api/disk").then(function (d) {
-      fill("images", d.images.map(function (i) {
-        return [{ t: i.repo + ":" + i.tag }, { t: i.size, num: 1 }, { t: i.containers, num: 1 }];
+      tiles("images", d.images.map(function (i) {
+        return { name: i.repo + ":" + i.tag, size: i.size, meta: +i.containers ? "in use: " + i.containers : "unused", idle: !+i.containers };
       }));
-      fill("volumes", d.volumes.map(function (v) {
-        return [{ t: v.name }, { t: v.site || "-" }, { t: v.size, num: 1 }];
+      tiles("volumes", d.volumes.map(function (v) {
+        return { name: v.name, size: v.size, meta: v.site || "no site", idle: !v.site };
       }));
     }).catch(function (e) { if (!e.offline) showMsg(e.message); });
   }
