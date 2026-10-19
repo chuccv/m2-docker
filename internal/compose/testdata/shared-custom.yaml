@@ -6,7 +6,7 @@ services:
       - -c
       - for p in analysis-icu analysis-phonetic; do ./bin/opensearch-plugin list | grep -qx $$p || ./bin/opensearch-plugin install --batch $$p; done; exec ./opensearch-docker-entrypoint.sh opensearch
     container_name: md-opensearch-3.0.0
-    restart: unless-stopped
+    restart: "no"
     environment:
       - discovery.type=single-node
       - DISABLE_INSTALL_DEMO_CONFIG=true
@@ -24,7 +24,7 @@ services:
       - -c
       - for p in analysis-icu analysis-phonetic; do ./bin/opensearch-plugin list | grep -qx $$p || ./bin/opensearch-plugin install --batch $$p; done; exec ./opensearch-docker-entrypoint.sh opensearch
     container_name: md-opensearch-latest
-    restart: unless-stopped
+    restart: "no"
     environment:
       - discovery.type=single-node
       - DISABLE_INSTALL_DEMO_CONFIG=true
@@ -38,7 +38,7 @@ services:
   md-router:
     image: traefik:v3.3
     container_name: md-router
-    restart: unless-stopped
+    restart: "no"
     command:
       - --providers.file.directory=/etc/traefik/dynamic
       - --providers.file.watch=true
@@ -67,7 +67,7 @@ services:
   md-xhgui:
     image: ddev/ddev-xhgui:v1.25.2
     container_name: md-xhgui
-    restart: unless-stopped
+    restart: "no"
     command:
       - sh
       - -c

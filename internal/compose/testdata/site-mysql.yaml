@@ -2,7 +2,7 @@ services:
   db:
     image: mysql:8.0
     container_name: ddev-ee249-qa-db
-    restart: unless-stopped
+    restart: "no"
     user: 1000:1000
     environment:
       - MYSQL_USER=db
@@ -16,7 +16,7 @@ services:
   redis:
     image: redis:7
     container_name: ddev-ee249-qa-redis
-    restart: unless-stopped
+    restart: "no"
     volumes:
       - ddev-ee249-qa_redis:/data
     labels:
@@ -24,7 +24,7 @@ services:
   web:
     image: md/php:8.5
     container_name: ddev-ee249-qa-web
-    restart: unless-stopped
+    restart: "no"
     user: 1000:1000
     volumes:
       - /var/www/html/ee249-qa:/var/www/html

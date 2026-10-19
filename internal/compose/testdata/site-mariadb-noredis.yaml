@@ -2,7 +2,7 @@ services:
   db:
     image: mariadb:11.4
     container_name: ddev-pfsm248-db
-    restart: unless-stopped
+    restart: "no"
     user: 1000:1000
     environment:
       - MARIADB_USER=db
@@ -15,7 +15,7 @@ services:
   web:
     image: md/php:8.4
     container_name: ddev-pfsm248-web
-    restart: unless-stopped
+    restart: "no"
     user: 1000:1000
     volumes:
       - /var/www/html/pfsm248:/var/www/html

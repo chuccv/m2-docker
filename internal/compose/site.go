@@ -42,7 +42,7 @@ func dbService(s site.Site, vol string, labels map[string]string) service {
 	svc := service{
 		Image:         s.DBImage(),
 		ContainerName: "ddev-" + s.Name + "-db",
-		Restart:       "unless-stopped",
+		Restart:       "no",
 		User:          "1000:1000",
 		Volumes:       []string{vol + ":/var/lib/mysql"},
 		Labels:        labels,
@@ -65,7 +65,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 			"web": {
 				Image:         "md/php:" + s.PHPVersion,
 				ContainerName: "ddev-" + s.Name + "-web",
-				Restart:       "unless-stopped",
+				Restart:       "no",
 				User:          "1000:1000",
 				Volumes: []string{
 					s.Root + ":/var/www/html",
@@ -101,7 +101,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 		f.Services["redis"] = service{
 			Image:         "redis:7",
 			ContainerName: "ddev-" + s.Name + "-redis",
-			Restart:       "unless-stopped",
+			Restart:       "no",
 			Volumes:       []string{redisVol + ":/data"},
 			Labels:        managed,
 		}
@@ -111,7 +111,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 		f.Services["varnish"] = service{
 			Image:         "varnish:" + s.Varnish,
 			ContainerName: "ddev-" + s.Name + "-varnish",
-			Restart:       "unless-stopped",
+			Restart:       "no",
 			DependsOn:     []string{"web"},
 			Volumes:       []string{p.Home + "/sites/" + s.Name + "/default.vcl:/etc/varnish/default.vcl:ro"},
 			Labels:        managed,
@@ -121,7 +121,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 		f.Services["phpmyadmin"] = service{
 			Image:         "phpmyadmin:5",
 			ContainerName: "ddev-" + s.Name + "-phpmyadmin",
-			Restart:       "unless-stopped",
+			Restart:       "no",
 			DependsOn:     []string{"db"},
 			Environment:   []string{"PMA_HOST=db", "PMA_USER=db", "PMA_PASSWORD=db", "UPLOAD_LIMIT=1G"},
 			Labels:        managed,
