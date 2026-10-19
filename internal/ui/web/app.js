@@ -135,13 +135,22 @@
   }
 
   function tiles(id, items) {
-    var g = $(id);
+    var g = $(id), groups = {}, order = [];
     g.textContent = "";
     items.forEach(function (it) {
-      var t = el("div", it.idle ? "tile idle" : "tile");
-      t.appendChild(el("div", "tile-name", it.name));
-      t.appendChild(el("b", "", it.size));
-      t.appendChild(el("span", "", it.meta));
+      if (!groups[it.group]) { groups[it.group] = []; order.push(it.group); }
+      groups[it.group].push(it);
+    });
+    order.forEach(function (name) {
+      var t = el("div", "tile");
+      t.appendChild(el("div", "tile-name", name));
+      groups[name].forEach(function (it) {
+        var row = el("div", it.idle ? "tile-row idle" : "tile-row");
+        row.appendChild(el("span", "", it.name));
+        row.appendChild(el("b", "", it.size));
+        row.appendChild(el("small", "", it.meta));
+        t.appendChild(row);
+      });
       g.appendChild(t);
     });
   }
@@ -149,10 +158,10 @@
   function refreshDisk() {
     api("GET", "/api/disk").then(function (d) {
       tiles("images", d.images.map(function (i) {
-        return { name: i.repo + ":" + i.tag, size: i.size, meta: +i.containers ? "in use: " + i.containers : "unused", idle: !+i.containers };
+        return { group: i.repo, name: i.tag, size: i.size, meta: +i.containers ? "in use: " + i.containers : "unused", idle: !+i.containers };
       }));
       tiles("volumes", d.volumes.map(function (v) {
-        return { name: v.name, size: v.size, meta: v.site || "no site", idle: !v.site };
+        return { group: v.site || "no site", name: v.name, size: v.size, meta: "", idle: !v.site };
       }));
     }).catch(function (e) { if (!e.offline) showMsg(e.message); });
   }
