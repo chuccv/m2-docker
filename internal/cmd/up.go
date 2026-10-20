@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/fs"
+	neturl "net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -280,6 +281,7 @@ func (e *env) up(s site.Site, home string) error {
 	if err := e.syncWebsites(s, cfg.Ports.HTTPS); err != nil {
 		fmt.Fprintf(e.writer(), "warning: websites sync: %v\n", err)
 	}
+	e.warnForeignRedirects(s, cfg.Ports.HTTPS)
 	for _, h := range s.Hostnames {
 		fmt.Fprintln(e.writer(), siteURL(h, cfg.Ports.HTTPS))
 	}
@@ -309,6 +311,29 @@ func (e *env) syncWebsites(s site.Site, httpsPort int) error {
 	}
 	_, err = e.runner.Run("docker", "exec", "ddev-"+s.Name+"-web", "php", "bin/magento", "cache:flush")
 	return err
+}
+
+func (e *env) warnForeignRedirects(s site.Site, httpsPort int) {
+	if _, err := os.Stat(filepath.Join(s.Root, "app", "etc", "env.php")); err != nil {
+		return
+	}
+	hosts := []string{s.Hostnames[0]}
+	for _, w := range s.Websites {
+		hosts = append(hosts, w.Host)
+	}
+	for _, h := range hosts {
+		url := siteURL(h, httpsPort) + "/"
+		_, loc, err := e.probe(url)
+		if err != nil {
+			fmt.Fprintf(e.writer(), "warning: %s: %v\n", url, err)
+			continue
+		}
+		u, err := neturl.Parse(loc)
+		if err != nil || u.Host == "" || u.Hostname() == h {
+			continue
+		}
+		fmt.Fprintf(e.writer(), "warning: %s redirect sang %s. Kiểm tra core_config_data web/%%_url của scope đó.\n", url, loc)
+	}
 }
 
 func siteURL(host string, httpsPort int) string {

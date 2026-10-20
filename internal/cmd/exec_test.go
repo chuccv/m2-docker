@@ -30,6 +30,7 @@ func testEnv(t *testing.T, tty bool) (*env, *run.FakeRunner, string) {
 		runner:    f,
 		tty:       func() bool { return tty },
 		lookup:    func(string) ([]string, error) { return []string{"127.0.0.1"}, nil },
+		httpGet:   func(string) (int, string, error) { return 200, "", nil },
 		errOut:    &strings.Builder{},
 		scanRoots: []string{root},
 		getwd:     func() (string, error) { return filepath.Join(root, "ee249-qa"), nil },

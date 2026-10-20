@@ -161,3 +161,45 @@ func TestUpNoReloadWhenRunConfUnchanged(t *testing.T) {
 		t.Fatal("reload ran")
 	}
 }
+
+func TestWarnForeignRedirects(t *testing.T) {
+	e, _, _ := upEnv(t)
+	root := filepath.Join(filepath.Dir(mustCwd(t, e)), "ee249-qa")
+	if err := os.MkdirAll(filepath.Join(root, "app", "etc"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "app", "etc", "env.php"), []byte("<?php"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	e.httpGet = func(u string) (int, string, error) {
+		if u == "https://ee249-qa.md.site/" {
+			return 302, "https://old.ddev.site/", nil
+		}
+		return 302, "https://ee249-qa.md.site/customer/account/login/", nil
+	}
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	out := e.out.(*strings.Builder).String()
+	if !strings.Contains(out, "warning: https://ee249-qa.md.site/ redirect sang https://old.ddev.site/") {
+		t.Fatalf("got %s", out)
+	}
+}
+
+func TestNoWarnSameHostRedirect(t *testing.T) {
+	e, _, _ := upEnv(t)
+	root := filepath.Join(filepath.Dir(mustCwd(t, e)), "ee249-qa")
+	if err := os.MkdirAll(filepath.Join(root, "app", "etc"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "app", "etc", "env.php"), []byte("<?php"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	e.httpGet = func(string) (int, string, error) { return 302, "https://ee249-qa.md.site/customer/account/login/", nil }
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	if out := e.out.(*strings.Builder).String(); strings.Contains(out, "redirect sang") {
+		t.Fatalf("got %s", out)
+	}
+}
