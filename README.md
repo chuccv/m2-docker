@@ -26,7 +26,7 @@
     md poweroff              # stop everything, including the router
     md snapshot              # dump the database (--list, restore <file>)
     md hosts [--all]         # print /etc/hosts lines the site still needs
-    md ui                    # web dashboard on 127.0.0.1:9901
+    md ui                    # web dashboard on 127.0.0.1:9900 (--port to change)
     md clean                 # remove unused images, build cache, volumes
 
 Commands find the site by walking up from the current directory to `.md/config.yaml` or `.ddev/config.yaml`, then use its `name` for container names (`ddev-<name>-db` for `md mysql`). From anywhere else pass `-s <name>`, e.g. `md -s shop mysql`.
