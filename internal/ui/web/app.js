@@ -96,7 +96,7 @@
     var head = el("div", "head");
     var id = el("div");
     id.appendChild(el("span", "name", s.name));
-    id.appendChild(el("span", "host mono", s.name + ".ddev.site"));
+    if (s.urls && s.urls.storefront) id.appendChild(el("span", "host mono", new URL(s.urls.storefront).host));
     head.appendChild(id);
     var label = wait ? busy[s.name] + "..." : s.status === "ddev" ? "running (ddev)" : s.status;
     head.appendChild(el("span", wait ? "status busy" : "status", label));
@@ -164,7 +164,7 @@
     $("empty").hidden = shown > 0;
     totMem += stats.shared.mem || 0;
     totCpu += stats.shared.cpu || 0;
-    $("summary").textContent = nRun + " running · " + nStop + " stopped · " + nDdev + " on DDEV · " + fmtMem(totMem) + " RAM · " + totCpu.toFixed(1) + "% CPU (shared " + fmtMem(stats.shared.mem) + " / " + (stats.shared.cpu || 0).toFixed(1) + "%)";
+    $("summary").textContent = nRun + " running · " + nStop + " stopped · " + nDdev + " not migrated · " + fmtMem(totMem) + " RAM · " + totCpu.toFixed(1) + "% CPU (shared " + fmtMem(stats.shared.mem) + " / " + (stats.shared.cpu || 0).toFixed(1) + "%)";
   }
 
   function refreshSites() {
