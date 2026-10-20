@@ -61,10 +61,16 @@ func TestBaseURLs(t *testing.T) {
 	want := []Setting{
 		{"default", "", "web/unsecure/base_url", "https://shop.ddev.site:9443/"},
 		{"default", "", "web/secure/base_url", "https://shop.ddev.site:9443/"},
+		{"default", "", "web/unsecure/base_link_url", "{{unsecure_base_url}}"},
+		{"default", "", "web/secure/base_link_url", "{{secure_base_url}}"},
 		{"websites", "b2b", "web/unsecure/base_url", "https://b2b.shop.ddev.site:9443/"},
 		{"websites", "b2b", "web/secure/base_url", "https://b2b.shop.ddev.site:9443/"},
+		{"websites", "b2b", "web/unsecure/base_link_url", "{{unsecure_base_url}}"},
+		{"websites", "b2b", "web/secure/base_link_url", "{{secure_base_url}}"},
 		{"stores", "fr", "web/unsecure/base_url", "https://fr.shop.ddev.site:9443/"},
 		{"stores", "fr", "web/secure/base_url", "https://fr.shop.ddev.site:9443/"},
+		{"stores", "fr", "web/unsecure/base_link_url", "{{unsecure_base_url}}"},
+		{"stores", "fr", "web/secure/base_link_url", "{{secure_base_url}}"},
 	}
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("got %v", got)
@@ -73,7 +79,7 @@ func TestBaseURLs(t *testing.T) {
 
 func TestBaseURLsPort443(t *testing.T) {
 	got := BaseURLs("shop.ddev.site", nil, 443)
-	if len(got) != 2 || got[0].Value != "https://shop.ddev.site/" {
+	if len(got) != 4 || got[0].Value != "https://shop.ddev.site/" {
 		t.Fatalf("got %v", got)
 	}
 }

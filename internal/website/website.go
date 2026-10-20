@@ -51,7 +51,9 @@ func BaseURLs(primary string, ws []Website, httpsPort int) []Setting {
 		u := baseURL(host, httpsPort)
 		out = append(out,
 			Setting{scope, code, "web/unsecure/base_url", u},
-			Setting{scope, code, "web/secure/base_url", u})
+			Setting{scope, code, "web/secure/base_url", u},
+			Setting{scope, code, "web/unsecure/base_link_url", "{{unsecure_base_url}}"},
+			Setting{scope, code, "web/secure/base_link_url", "{{secure_base_url}}"})
 	}
 	add("default", "", primary)
 	for _, w := range ws {
