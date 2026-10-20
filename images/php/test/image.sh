@@ -29,6 +29,7 @@ for e in xdebug xhprof; do
     grep -qx "$e" <<<"$mods" && fail "$e should be disabled by default"
 done
 run php -d extension=xhprof -m | grep -qix xhprof || fail "xhprof not loadable"
+[ "$(run php -d extension=xhprof -d auto_prepend_file=/usr/local/share/php-profiler/prepend.php -r 'var_export(xhprof_disable());')" = "NULL" ] || fail "cli is profiled"
 run php -d zend_extension=xdebug -m | grep -qix xdebug || fail "xdebug not loadable"
 [ "$(run php -r 'echo ini_get("memory_limit");')" = "-1" ] || fail memory_limit
 [ "$(run id -u)" = "1000" ] || fail uid
@@ -47,6 +48,7 @@ mkdir -p "$tmp/www/pub"
 printf '<?php echo $_SERVER["MAGE_RUN_CODE"] ?? "unset", "|", $_SERVER["MAGE_RUN_TYPE"] ?? "unset";' > "$tmp/www/pub/index.php"
 printf 'map $host $md_run_code {\n    default "";\n    b2b.shop.ddev.site "b2b";\n}\nmap $host $md_run_type {\n    default "";\n    b2b.shop.ddev.site "website";\n}\n' > "$tmp/md-run.conf"
 printf '<?php echo $_SERVER["HTTP_X_FORWARDED_PROTO"] ?? "unset";' > "$tmp/www/pub/get.php"
+printf '<?php echo $_SERVER["SERVER_NAME"];' > "$tmp/www/pub/health_check.php"
 cid="$(docker run -d -v "$tmp/www:/var/www/html" -v "$tmp/md-run.conf:/etc/nginx/md-run.conf:ro" -v "$tmp/md.crt:/usr/local/share/ca-certificates/md.crt:ro" "$tag")"
 trap 'docker rm -f "$cid" >/dev/null 2>&1; rm -rf "$tmp"; restore' EXIT
 sleep 5
@@ -60,6 +62,7 @@ docker exec "$cid" sh -c 'curl -fs -o /dev/null -w "%{http_code}" http://127.0.0
 docker exec "$cid" sh -c 'curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/ | grep -Eq "^(200|404|403|50[0-9])$"' || fail "nginx not responding"
 [ "$(docker exec "$cid" curl -s -H 'Host: b2b.shop.ddev.site' http://127.0.0.1/index.php)" = "b2b|website" ] || fail "MAGE_RUN_CODE not set for b2b host"
 [ "$(docker exec "$cid" curl -s -H 'Host: shop.ddev.site' http://127.0.0.1/index.php)" = "|" ] || fail "MAGE_RUN_CODE not empty for default host"
+[ "$(docker exec "$cid" curl -s -H 'Host: shop.md.site' http://127.0.0.1/health_check.php)" = "shop.md.site" ] || fail "nginx SERVER_NAME not host"
 procs="$(docker exec "$cid" sh -c 'for d in /proc/[0-9]*; do echo "$(cat $d/comm) $(stat -c %U $d)"; done')"
 for p in php-fpm nginx mailpit; do
     grep -qx "$p www" <<<"$procs" || fail "$p not running as www"
@@ -75,7 +78,7 @@ trap 'docker rm -f "$cid" $acid >/dev/null 2>&1; rm -rf "$tmp"; restore' EXIT
 mkdir -p "$tmp/awww/pub"
 printf '<?php echo $_SERVER["MAGE_RUN_CODE"] ?? "unset", "|", $_SERVER["MAGE_RUN_TYPE"] ?? "unset";' > "$tmp/awww/pub/index.php"
 printf '<?php echo "rewritten";' > "$tmp/awww/pub/real.php"
-cp "$tmp/www/pub/get.php" "$tmp/awww/pub/get.php"
+cp "$tmp/www/pub/get.php" "$tmp/www/pub/health_check.php" "$tmp/awww/pub/"
 mkdir -p "$tmp/awww/pub/v24" "$tmp/awww/pub/v22"
 printf '<IfVersion >= 2.4>\n    Require all denied\n</IfVersion>\n' > "$tmp/awww/pub/v24/.htaccess"
 printf 'Order allow,deny\nDeny from all\n' > "$tmp/awww/pub/v22/.htaccess"
@@ -93,6 +96,7 @@ docker exec "$acid" apachectl -t >/dev/null 2>&1 || fail "apachectl -t"
 [ "$(docker exec "$acid" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/v24/f.txt)" = "403" ] || fail "apache IfVersion/Require htaccess not 403"
 [ "$(docker exec "$acid" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/v22/f.txt)" = "403" ] || fail "apache Order/Deny htaccess not 403"
 [ "$(docker exec "$acid" curl -s -H 'X-Forwarded-Proto: https' http://127.0.0.1/get.php)" = "https" ] || fail "apache X-Forwarded-Proto not passed"
+[ "$(docker exec "$acid" curl -s -H 'Host: shop.md.site' http://127.0.0.1/health_check.php)" = "shop.md.site" ] || fail "apache SERVER_NAME not host"
 aprocs="$(docker exec "$acid" sh -c 'for d in /proc/[0-9]*; do echo "$(cat $d/comm) $(stat -c %U $d)"; done')"
 grep -qx "apache2 www" <<<"$aprocs" || fail "apache2 not running as www"
 grep -q "^nginx " <<<"$aprocs" && fail "nginx running in apache mode"

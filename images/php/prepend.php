@@ -11,7 +11,7 @@ try {
             'timeout' => 3,
         ],
         'profiler.enable' => function () {
-            return true;
+            return PHP_SAPI !== 'cli';
         },
     ]);
     $profiler->start();
