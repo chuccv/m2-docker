@@ -41,6 +41,7 @@ State lives in `~/.md`. Snapshots go to `~/.md/sites/<name>/snapshots/`.
       xhgui_http: 8143
       xhgui_https: 8142
     bind_all_interfaces: false   # true publishes router ports on 0.0.0.0, default is 127.0.0.1
+    domain: md.site              # sites answer on <name>.<domain>; a domain with wildcard DNS to 127.0.0.1 (e.g. A *.neilcv.work -> 127.0.0.1) needs no /etc/hosts
 
 ## MCP server
 
@@ -137,5 +138,6 @@ Containers use `restart: "no"`: nothing starts on boot, run `md up` when you nee
 - Container names stay `ddev-<name>-web`, `ddev-<name>-db`, `ddev-<name>-redis`
 - Sites answer on `<name>.md.site` (base URL) and still on `<name>.ddev.site` as an alias, plus `additional_hostnames` (as `<host>.md.site`) and `additional_fqdns`
 - `md.site` has no public DNS: add the lines from `md hosts --all` to `/etc/hosts`
+- With `domain:` set in `~/.md/config.yaml`, `<name>.<domain>` becomes the base URL host, `<name>.md.site` stays an alias and is no longer reported by `md hosts`
 - Existing `<name>-mariadb` volumes are reused as-is
 - md refuses to start while DDEV containers for the same site, or the DDEV router on the same ports, are running

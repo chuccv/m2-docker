@@ -55,6 +55,18 @@ func (e *env) findSite(name string) (site.Site, error) {
 }
 
 func register(root *cobra.Command, e *env) {
+	root.PersistentPreRunE = func(*cobra.Command, []string) error {
+		home, err := e.home()
+		if err != nil {
+			return err
+		}
+		cfg, err := config.Load(home)
+		if err != nil {
+			return err
+		}
+		site.Domain = cfg.Domain
+		return nil
+	}
 	root.PersistentFlags().StringVarP(&e.site, "site", "s", "", "site name (default: from current directory)")
 	root.AddCommand(newTrustCmd(), newHostsCmd(e))
 	root.AddCommand(newUpCmd(e), newStopCmd(e), newRestartCmd(e), newPoweroffCmd(e), newListCmd(e), newDescribeCmd(e))

@@ -16,7 +16,7 @@ func hostsLines(sites []site.Site, lookup func(string) ([]string, error)) []stri
 	var lines []string
 	for _, s := range sites {
 		for _, h := range s.Hostnames {
-			if strings.HasSuffix(h, ".ddev.site") || seen[h] {
+			if strings.HasSuffix(h, ".ddev.site") || (site.Domain != site.LegacyDomain && strings.HasSuffix(h, "."+site.LegacyDomain)) || seen[h] {
 				continue
 			}
 			seen[h] = true

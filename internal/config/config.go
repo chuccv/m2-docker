@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -14,6 +15,7 @@ type Ports struct{ HTTP, HTTPS, MailpitHTTP, MailpitHTTPS, XHGuiHTTP, XHGuiHTTPS
 type Config struct {
 	Ports             Ports
 	BindAllInterfaces bool
+	Domain            string
 }
 
 type rawPorts struct {
@@ -29,7 +31,7 @@ type rawPorts struct {
 }
 
 func Load(home string) (Config, error) {
-	c := Config{Ports: Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142, PhpMyAdminHTTP: 8036, PhpMyAdminHTTPS: 8037}}
+	c := Config{Ports: Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 8026, XHGuiHTTP: 8143, XHGuiHTTPS: 8142, PhpMyAdminHTTP: 8036, PhpMyAdminHTTPS: 8037}, Domain: "md.site"}
 	path := filepath.Join(home, "config.yaml")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -41,11 +43,15 @@ func Load(home string) (Config, error) {
 	var raw struct {
 		Ports             rawPorts `yaml:"ports"`
 		BindAllInterfaces bool     `yaml:"bind_all_interfaces"`
+		Domain            string   `yaml:"domain"`
 	}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return c, fmt.Errorf("parse %s: %w", path, err)
 	}
 	c.BindAllInterfaces = raw.BindAllInterfaces
+	if raw.Domain != "" {
+		c.Domain = strings.ToLower(strings.Trim(raw.Domain, "."))
+	}
 	set := func(dst *int, v int) {
 		if v != 0 {
 			*dst = v

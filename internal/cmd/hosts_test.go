@@ -58,3 +58,16 @@ func TestHostsAllScansEveryRoot(t *testing.T) {
 		}
 	}
 }
+
+func TestHostsLinesCustomDomainSkipsLegacy(t *testing.T) {
+	site.Domain = "neilcv.work"
+	t.Cleanup(func() { site.Domain = site.LegacyDomain })
+	s := site.Site{Hostnames: site.DefaultHosts("shop")}
+	if want := []string{"shop.neilcv.work", "shop.md.site", "shop.ddev.site"}; !reflect.DeepEqual(s.Hostnames, want) {
+		t.Fatalf("hosts %v", s.Hostnames)
+	}
+	got := hostsLines([]site.Site{s}, func(string) ([]string, error) { return []string{"127.0.0.1"}, nil })
+	if len(got) != 0 {
+		t.Fatalf("got %v", got)
+	}
+}

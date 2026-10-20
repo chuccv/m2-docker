@@ -61,10 +61,15 @@ var (
 	codeRe = regexp.MustCompile(`^[a-z0-9_]+$`)
 )
 
-const Domain = "md.site"
+const LegacyDomain = "md.site"
+
+var Domain = LegacyDomain
 
 func DefaultHosts(name string) []string {
-	return []string{name + "." + Domain, name + ".ddev.site"}
+	if Domain == LegacyDomain {
+		return []string{name + "." + Domain, name + ".ddev.site"}
+	}
+	return []string{name + "." + Domain, name + "." + LegacyDomain, name + ".ddev.site"}
 }
 
 func NormalizeName(folder string) string {

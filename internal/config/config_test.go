@@ -81,3 +81,20 @@ func TestBindAllInterfaces(t *testing.T) {
 		t.Fatalf("set: %+v %v", c, err)
 	}
 }
+
+func TestDomain(t *testing.T) {
+	d := t.TempDir()
+	if c, _ := Load(d); c.Domain != "md.site" {
+		t.Fatalf("default %q", c.Domain)
+	}
+	if err := os.WriteFile(filepath.Join(d, "config.yaml"), []byte("domain: .NeilCV.work.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Domain != "neilcv.work" {
+		t.Fatalf("got %q", c.Domain)
+	}
+}
