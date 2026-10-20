@@ -76,6 +76,14 @@ func TestUpSyncsBaseURLsForMDSiteWithEnvPHP(t *testing.T) {
 	}
 }
 
+func TestUpFlushesCacheAfterBaseURLChange(t *testing.T) {
+	_, cs := mdSite(t, true)
+	all := cs()
+	if i := index(all, "docker exec ddev-ee249-qa-web php bin/magento cache:flush"); i < 0 || i < index(all, "config:set --lock-env") {
+		t.Fatalf("missing flush in\n%s", strings.Join(all, "\n"))
+	}
+}
+
 func TestUpNoSyncWithoutEnvPHP(t *testing.T) {
 	_, cs := mdSite(t, false)
 	if index(cs(), "config:show") >= 0 {

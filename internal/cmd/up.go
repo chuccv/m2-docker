@@ -303,7 +303,11 @@ func (e *env) syncWebsites(s site.Site, httpsPort int) error {
 	if _, err := os.Stat(filepath.Join(s.Root, "app", "etc", "env.php")); err != nil {
 		return nil
 	}
-	_, err := website.Sync(s, s.Websites, e.runner, httpsPort)
+	changed, err := website.Sync(s, s.Websites, e.runner, httpsPort)
+	if err != nil || changed == 0 {
+		return err
+	}
+	_, err = e.runner.Run("docker", "exec", "ddev-"+s.Name+"-web", "php", "bin/magento", "cache:flush")
 	return err
 }
 
