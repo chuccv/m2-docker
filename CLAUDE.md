@@ -13,7 +13,7 @@ go vet ./...
 go build -o /home/neil/.local/bin/md ./cmd/md     # install the binary in use on this machine
 ```
 
-After rebuilding, a running `md ui` (port 9901) still serves the old binary until it is restarted.
+After rebuilding, a running `md ui` (port 9900) still serves the old binary until it is restarted.
 
 ## Architecture
 
