@@ -29,6 +29,8 @@ func testEnv(t *testing.T, tty bool) (*env, *run.FakeRunner, string) {
 	e := &env{
 		runner:    f,
 		tty:       func() bool { return tty },
+		lookup:    func(string) ([]string, error) { return []string{"127.0.0.1"}, nil },
+		errOut:    &strings.Builder{},
 		scanRoots: []string{root},
 		getwd:     func() (string, error) { return filepath.Join(root, "ee249-qa"), nil },
 		home:      func() (string, error) { return home, nil },

@@ -178,20 +178,28 @@ func pinnedSearch(home, root, engine string) (string, error) {
 }
 
 func MagentoVersion(root string) (string, error) {
+	v, _, err := MagentoPackage(root)
+	return v, err
+}
+
+func MagentoPackage(root string) (version, edition string, err error) {
 	data, err := os.ReadFile(filepath.Join(root, "composer.lock"))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	var lock struct {
 		Packages []struct{ Name, Version string }
 	}
 	if err := json.Unmarshal(data, &lock); err != nil {
-		return "", err
+		return "", "", err
 	}
 	for _, p := range lock.Packages {
-		if p.Name == "magento/product-community-edition" || p.Name == "magento/product-enterprise-edition" {
-			return p.Version, nil
+		switch p.Name {
+		case "magento/product-community-edition":
+			return p.Version, "community", nil
+		case "magento/product-enterprise-edition":
+			return p.Version, "enterprise", nil
 		}
 	}
-	return "", fmt.Errorf("magento/product-*-edition not in composer.lock")
+	return "", "", fmt.Errorf("magento/product-*-edition not in composer.lock")
 }

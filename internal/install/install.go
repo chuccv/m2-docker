@@ -113,6 +113,27 @@ func searchArgs(engine, version, prefix string) []string {
 	return []string{"--search-engine=opensearch", "--opensearch-host=opensearch", "--opensearch-port=9200", "--opensearch-index-prefix=" + prefix}
 }
 
+func applyOverrides(st *Stack, php, db, dbType, search, engine string) error {
+	if engine != "" && engine != st.Search.Engine && search == "" {
+		return fmt.Errorf("--search-engine %s needs --search <version>", engine)
+	}
+	for _, ov := range []struct {
+		dst *string
+		v   string
+	}{{&st.PHP, php}, {&st.Database.Version, db}, {&st.Database.Type, dbType}, {&st.Search.Version, search}, {&st.Search.Engine, engine}} {
+		if ov.v != "" {
+			*ov.dst = ov.v
+		}
+	}
+	if st.Database.Type != "mariadb" && st.Database.Type != "mysql" {
+		return fmt.Errorf("invalid database type %q: use mariadb or mysql", st.Database.Type)
+	}
+	if st.Search.Engine != "opensearch" && st.Search.Engine != "elasticsearch" {
+		return fmt.Errorf("invalid search engine %q: use opensearch or elasticsearch", st.Search.Engine)
+	}
+	return nil
+}
+
 func Install(o Options, r run.Runner, home string, ports config.Ports) (err error) {
 	root, err := filepath.Abs(o.Root)
 	if err != nil {
@@ -141,22 +162,8 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 	if err != nil {
 		return err
 	}
-	if o.SearchEngine != "" && o.SearchEngine != st.Search.Engine && o.Search == "" {
-		return fmt.Errorf("--search-engine %s needs --search <version>", o.SearchEngine)
-	}
-	for _, ov := range []struct {
-		dst *string
-		v   string
-	}{{&st.PHP, o.PHP}, {&st.Database.Version, o.DB}, {&st.Database.Type, o.DBType}, {&st.Search.Version, o.Search}, {&st.Search.Engine, o.SearchEngine}} {
-		if ov.v != "" {
-			*ov.dst = ov.v
-		}
-	}
-	if st.Database.Type != "mariadb" && st.Database.Type != "mysql" {
-		return fmt.Errorf("invalid database type %q: use mariadb or mysql", st.Database.Type)
-	}
-	if st.Search.Engine != "opensearch" && st.Search.Engine != "elasticsearch" {
-		return fmt.Errorf("invalid search engine %q: use opensearch or elasticsearch", st.Search.Engine)
+	if err := applyOverrides(&st, o.PHP, o.DB, o.DBType, o.Search, o.SearchEngine); err != nil {
+		return err
 	}
 	if compose.ComposerAuth() == "" {
 		return fmt.Errorf("composer auth.json not found: put Magento keys in $COMPOSER_HOME/auth.json or ~/.composer/auth.json")

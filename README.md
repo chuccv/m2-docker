@@ -57,7 +57,32 @@ Every tool except `sites_list` takes the site name as `site`. Output is capped a
 - `snapshot_create`, `snapshot_list`, `snapshot_restore`
 - `xdebug`, `xhprof` (`on`; xhprof returns the XHGui URL)
 
+`site_init` (`dir`, optional `version`, `php`, `db`, `db_type`, `search`, `search_engine`, `varnish`) sets up a folder that already has Magento code. It never runs sudo: missing `/etc/hosts` lines come back as an error with the command for the user.
+
 There are no tools for `clean`, `poweroff`, `install` or `migrate`.
+
+## Cài site
+
+| Folder | Lệnh |
+|---|---|
+| Trắng | `md install [dir] --version 2.4.8` |
+| Có `.ddev` | `md migrate [dir]` |
+| Có code Magento, chưa có `.md/config.yaml` | `md init [dir]` |
+
+`md init` đọc version và edition từ `composer.lock` (không có thì cần `--version`), ghi `.md/config.yaml`, chạy `up`. Nó nhận cùng flag stack như `md install`: `--php`, `--db`, `--db-type`, `--search`, `--search-engine`, `--varnish`. Không chạy composer hay `setup:install`, không đụng `app/etc/env.php`.
+
+Sau `up`, md kiểm tra `/etc/hosts` (terminal thì chạy `sudo tee -a`, không thì in lệnh `md hosts <name> | sudo tee -a /etc/hosts`) rồi GET `https://<name>.md.site/` và in status. Lỗi domain không tắt container.
+
+Site chưa có `app/etc/env.php` thì làm tiếp:
+
+```bash
+gunzip -c dump.sql.gz | md mysql
+md magento setup:config:set --db-host=db --db-name=db --db-user=db --db-password=db --session-save=redis --session-save-redis-host=redis --session-save-redis-db=2 --cache-backend=redis --cache-backend-redis-server=redis --cache-backend-redis-db=0 --page-cache=redis --page-cache-redis-server=redis --page-cache-redis-db=1
+md magento setup:store-config:set --base-url=https://<name>.md.site/ --base-url-secure=https://<name>.md.site/ --use-secure=1 --use-secure-admin=1
+md magento setup:upgrade
+```
+
+`md up` cũng cảnh báo trên stderr khi thiếu dòng `/etc/hosts`.
 
 ## Install stacks
 

@@ -347,6 +347,7 @@ func (e *env) upByName(name string) error {
 	if err := e.up(s, home); err != nil {
 		return err
 	}
+	e.warnHosts(s)
 	if s.SearchVersion == "" || !fileExists(filepath.Join(s.Root, "app", "etc", "env.php")) {
 		return nil
 	}

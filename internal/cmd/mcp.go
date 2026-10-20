@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chuccv/m2-docker/internal/config"
+	"github.com/chuccv/m2-docker/internal/install"
 	"github.com/chuccv/m2-docker/internal/run"
 	"github.com/chuccv/m2-docker/internal/site"
 	"github.com/chuccv/m2-docker/internal/snapshot"
@@ -33,6 +34,14 @@ var (
 	safeName  = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 )
 
+const mcpInstructions = `Setting up a site:
+- Blank folder: run "md install" in the CLI.
+- Folder with .ddev: run "md migrate" in the CLI.
+- Folder with Magento code but no .md/config.yaml: call site_init.
+- Never hand-write .md/config.yaml.
+- Never report a site as working until its https URL was fetched and answered.
+- site_init and site_up output tells you about missing /etc/hosts lines. md never runs sudo here: hand the printed sudo command to the user.`
+
 type quietRunner struct{ run.Runner }
 
 func (q quietRunner) Stream(name string, args ...string) error {
@@ -46,6 +55,8 @@ func (m mcpServer) call(fn func(e *env) error) (string, error) {
 	c := *m.e
 	var buf bytes.Buffer
 	c.out = &buf
+	c.errOut = &buf
+	c.tty = func() bool { return false }
 	c.runner = quietRunner{m.e.runner}
 	err := fn(&c)
 	return buf.String(), err
@@ -126,6 +137,17 @@ type snapshotRestoreIn struct {
 	Name string `json:"name" jsonschema:"snapshot file name from snapshot_list"`
 }
 
+type initIn struct {
+	Dir          string `json:"dir" jsonschema:"absolute path of the folder that already has Magento code"`
+	Version      string `json:"version,omitempty" jsonschema:"Magento version, default from composer.lock"`
+	PHP          string `json:"php,omitempty" jsonschema:"PHP version override"`
+	DB           string `json:"db,omitempty" jsonschema:"database version override"`
+	DBType       string `json:"db_type,omitempty" jsonschema:"mariadb or mysql"`
+	Search       string `json:"search,omitempty" jsonschema:"search engine version override"`
+	SearchEngine string `json:"search_engine,omitempty" jsonschema:"opensearch or elasticsearch, needs search"`
+	Varnish      bool   `json:"varnish,omitempty" jsonschema:"add Varnish"`
+}
+
 type toggleIn struct {
 	Site string `json:"site" jsonschema:"md site name"`
 	On   bool   `json:"on" jsonschema:"true to enable, false to disable"`
@@ -187,6 +209,18 @@ func (m mcpServer) stop(in siteIn) (string, error) {
 
 func (m mcpServer) restart(in siteIn) (string, error) {
 	return m.simple(in, func(e *env, n string) error { return e.restartByName(n) })
+}
+
+func (m mcpServer) siteInit(in initIn) (string, error) {
+	if in.Dir == "" {
+		return "", errors.New("dir is required")
+	}
+	if !filepath.IsAbs(in.Dir) {
+		return "", errors.New("dir must be an absolute path")
+	}
+	return m.call(func(e *env) error {
+		return e.initSite(install.InitOptions{Root: in.Dir, Version: in.Version, PHP: in.PHP, DB: in.DB, DBType: in.DBType, Search: in.Search, SearchEngine: in.SearchEngine, Varnish: in.Varnish})
+	})
 }
 
 func (m mcpServer) execWeb(name string, tail ...string) (string, error) {
@@ -318,9 +352,10 @@ func (m mcpServer) toggle(ext string) func(toggleIn) (string, error) {
 }
 
 func (m mcpServer) build() *mcp.Server {
-	s := mcp.NewServer(&mcp.Implementation{Name: "md", Version: "1"}, nil)
+	s := mcp.NewServer(&mcp.Implementation{Name: "md", Version: "1"}, &mcp.ServerOptions{Instructions: mcpInstructions})
 	addTool(s, "sites_list", "List md sites with status, URL and root", m.sitesList)
 	addTool(s, "site_describe", "Show containers, hostnames, database credentials and ports of a site", m.describe)
+	addTool(s, "site_init", "Set up a folder that already has Magento code but no .md/config.yaml: detects version and edition from composer.lock, writes .md/config.yaml, starts the site. Never needs sudo; reports missing /etc/hosts lines", m.siteInit)
 	addTool(s, "site_up", "Start a site", m.up)
 	addTool(s, "site_stop", "Stop a site, data volumes are kept", m.stop)
 	addTool(s, "site_restart", "Stop then start a site", m.restart)
