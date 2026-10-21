@@ -2,6 +2,8 @@
 
 `md` is a small Go CLI that runs local Magento 2 sites with plain Docker Compose and Traefik. It replaces DDEV while keeping DDEV's container names, hostnames and database volumes, so existing DDEV sites move over without changes.
 
+![md ui: sites dashboard](assets/md-ui.png)
+
 ## Requirements
 
 - Linux

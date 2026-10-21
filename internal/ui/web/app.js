@@ -145,7 +145,17 @@
     return card;
   }
 
+  var pressed = false, pending = false;
+  document.addEventListener("pointerdown", function () { pressed = true; }, true);
+  function release() {
+    pressed = false;
+    if (pending) { pending = false; setTimeout(render, 0); }
+  }
+  document.addEventListener("pointerup", release, true);
+  document.addEventListener("pointercancel", release, true);
+
   function render() {
+    if (pressed) { pending = true; return; }
     var q = $("filter").value.trim().toLowerCase();
     var run = $("running"), stop = $("stopped");
     run.textContent = "";
