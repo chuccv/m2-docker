@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chuccv/m2-docker/internal/config"
-	"github.com/chuccv/m2-docker/internal/install"
-	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/config"
+	"github.com/chuccv/magento2-docker/internal/install"
+	"github.com/chuccv/magento2-docker/internal/site"
 )
 
 func (e *env) rootArg(args []string) (string, error) {

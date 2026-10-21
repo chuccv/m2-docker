@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chuccv/m2-docker/internal/config"
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/tls"
+	"github.com/chuccv/magento2-docker/internal/config"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/tls"
 )
 
 func newTrustCmd() *cobra.Command {

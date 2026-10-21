@@ -1,4 +1,4 @@
-module github.com/chuccv/m2-docker
+module github.com/chuccv/magento2-docker
 
 go 1.25.0
 

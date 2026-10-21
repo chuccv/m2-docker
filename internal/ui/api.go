@@ -12,10 +12,10 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/chuccv/m2-docker/internal/clean"
-	"github.com/chuccv/m2-docker/internal/config"
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/clean"
+	"github.com/chuccv/magento2-docker/internal/config"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/site"
 )
 
 type SiteView struct {

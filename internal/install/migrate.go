@@ -6,13 +6,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/chuccv/m2-docker/internal/config"
-	"github.com/chuccv/m2-docker/internal/guard"
-	"github.com/chuccv/m2-docker/internal/migrate"
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/site"
-	"github.com/chuccv/m2-docker/internal/snapshot"
-	"github.com/chuccv/m2-docker/internal/stack"
+	"github.com/chuccv/magento2-docker/internal/config"
+	"github.com/chuccv/magento2-docker/internal/guard"
+	"github.com/chuccv/magento2-docker/internal/migrate"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/snapshot"
+	"github.com/chuccv/magento2-docker/internal/stack"
 )
 
 func IsBlank(root string) (bool, error) {

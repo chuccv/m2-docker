@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chuccv/m2-docker/internal/config"
+	"github.com/chuccv/magento2-docker/internal/config"
 )
 
 const confDir = "/usr/local/etc/php/conf.d"

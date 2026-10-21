@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/site"
 )
 
 const renewWindow = 30 * 24 * time.Hour

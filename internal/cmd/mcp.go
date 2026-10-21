@@ -16,11 +16,11 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
 
-	"github.com/chuccv/m2-docker/internal/config"
-	"github.com/chuccv/m2-docker/internal/install"
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/site"
-	"github.com/chuccv/m2-docker/internal/snapshot"
+	"github.com/chuccv/magento2-docker/internal/config"
+	"github.com/chuccv/magento2-docker/internal/install"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/snapshot"
 )
 
 const (

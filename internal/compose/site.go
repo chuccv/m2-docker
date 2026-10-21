@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/site"
 )
 
 func nodeMajor(v string) string {

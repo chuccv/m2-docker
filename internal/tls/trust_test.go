@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chuccv/m2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/run"
 )
 
 func caRoot(t *testing.T) (string, *run.FakeRunner) {

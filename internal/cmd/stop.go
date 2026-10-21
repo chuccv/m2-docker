@@ -3,8 +3,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/chuccv/m2-docker/internal/site"
-	"github.com/chuccv/m2-docker/internal/stack"
+	"github.com/chuccv/magento2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/stack"
 )
 
 func (e *env) stopSite(home, name string, searchVersions []string) error {

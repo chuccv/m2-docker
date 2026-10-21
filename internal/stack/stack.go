@@ -3,8 +3,8 @@ package stack
 import (
 	"path/filepath"
 
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/site"
 )
 
 func ComposeFile(home, name string) string {

@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/site"
-	"github.com/chuccv/m2-docker/internal/stack"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/stack"
 )
 
 type InitOptions struct {

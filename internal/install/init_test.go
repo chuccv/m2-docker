@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/site"
 )
 
 type initFixture struct {

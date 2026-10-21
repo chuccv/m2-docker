@@ -10,7 +10,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/chuccv/m2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/run"
 )
 
 func mcpSession(t *testing.T, e *env) *mcp.ClientSession {

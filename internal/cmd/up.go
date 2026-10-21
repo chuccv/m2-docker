@@ -14,15 +14,15 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chuccv/m2-docker/images"
-	"github.com/chuccv/m2-docker/internal/compose"
-	"github.com/chuccv/m2-docker/internal/config"
-	"github.com/chuccv/m2-docker/internal/guard"
-	"github.com/chuccv/m2-docker/internal/migrate"
-	"github.com/chuccv/m2-docker/internal/router"
-	"github.com/chuccv/m2-docker/internal/site"
-	"github.com/chuccv/m2-docker/internal/tls"
-	"github.com/chuccv/m2-docker/internal/website"
+	"github.com/chuccv/magento2-docker/images"
+	"github.com/chuccv/magento2-docker/internal/compose"
+	"github.com/chuccv/magento2-docker/internal/config"
+	"github.com/chuccv/magento2-docker/internal/guard"
+	"github.com/chuccv/magento2-docker/internal/migrate"
+	"github.com/chuccv/magento2-docker/internal/router"
+	"github.com/chuccv/magento2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/tls"
+	"github.com/chuccv/magento2-docker/internal/website"
 )
 
 func imageHash() (string, error) {

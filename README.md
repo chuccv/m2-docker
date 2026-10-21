@@ -10,7 +10,7 @@
 
 ## Install
 
-    go install github.com/chuccv/m2-docker/cmd/md@latest
+    go install github.com/chuccv/magento2-docker/cmd/md@latest
 
 ## Quickstart
 

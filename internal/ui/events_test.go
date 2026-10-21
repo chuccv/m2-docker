@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chuccv/m2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/run"
 )
 
 type fakeStream struct {

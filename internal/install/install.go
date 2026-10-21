@@ -8,13 +8,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/chuccv/m2-docker/internal/compose"
-	"github.com/chuccv/m2-docker/internal/config"
-	"github.com/chuccv/m2-docker/internal/migrate"
-	"github.com/chuccv/m2-docker/internal/run"
-	"github.com/chuccv/m2-docker/internal/site"
-	"github.com/chuccv/m2-docker/internal/stack"
-	"github.com/chuccv/m2-docker/internal/website"
+	"github.com/chuccv/magento2-docker/internal/compose"
+	"github.com/chuccv/magento2-docker/internal/config"
+	"github.com/chuccv/magento2-docker/internal/migrate"
+	"github.com/chuccv/magento2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/site"
+	"github.com/chuccv/magento2-docker/internal/stack"
+	"github.com/chuccv/magento2-docker/internal/website"
 )
 
 type Options struct {

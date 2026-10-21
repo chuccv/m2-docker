@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chuccv/m2-docker/internal/run"
+	"github.com/chuccv/magento2-docker/internal/run"
 )
 
 type Usage struct {
