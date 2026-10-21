@@ -10,6 +10,15 @@
 
 ## Install
 
+Prebuilt binary, no Go needed (amd64 or arm64):
+
+    arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+    sudo curl -fsSL -o /usr/local/bin/md https://github.com/chuccv/magento2-docker/releases/latest/download/md-linux-$arch
+    sudo chmod +x /usr/local/bin/md
+    md --version
+
+From source (Go 1.25+):
+
     go install github.com/chuccv/magento2-docker/cmd/md@latest
 
 ## Quickstart
