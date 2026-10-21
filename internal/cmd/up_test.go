@@ -280,6 +280,32 @@ func TestUpCreatesNodeVolume(t *testing.T) {
 	}
 }
 
+func TestUpCreatesMissingRedisVolume(t *testing.T) {
+	e, f, _ := upEnv(t)
+	s, err := e.findSite("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := filepath.Join(s.Root, ".md", "config.yaml")
+	body, err := os.ReadFile(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cfg, append(body, "redis: true\n"...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f.Err["docker volume inspect ddev-ee249-qa_redis"] = os.ErrNotExist
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	cs := calls(f)
+	c := index(cs, "docker volume create ddev-ee249-qa_redis")
+	u := index(cs, "docker compose -p md-ee249-qa")
+	if c < 0 || u < c {
+		t.Fatalf("redis volume not created before compose up:\n%s", strings.Join(cs, "\n"))
+	}
+}
+
 func TestEmptyNodeVersionVolumeMatchesCompose(t *testing.T) {
 	e, f, home := upEnv(t)
 	s, err := e.findSite("")

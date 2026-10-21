@@ -124,6 +124,18 @@ func (e *env) ensureNodeVolume(nodeVersion string) error {
 	return nil
 }
 
+func (e *env) ensureRedisVolume(s site.Site) error {
+	if !s.HasAddon("redis") {
+		return nil
+	}
+	vol := "ddev-" + s.Name + "_redis"
+	if _, err := e.runner.Run("docker", "volume", "inspect", vol); err == nil {
+		return nil
+	}
+	_, err := e.runner.Run("docker", "volume", "create", vol)
+	return err
+}
+
 func (e *env) ensureCA(home string) error {
 	dst := filepath.Join(home, "ca", "rootCA.pem")
 	if _, err := os.Stat(dst); err == nil {
@@ -185,6 +197,9 @@ func (e *env) up(s site.Site, home string) error {
 		return err
 	}
 	if err := e.ensureNodeVolume(s.NodeVersion); err != nil {
+		return err
+	}
+	if err := e.ensureRedisVolume(s); err != nil {
 		return err
 	}
 	if err := e.ensureCA(home); err != nil {
