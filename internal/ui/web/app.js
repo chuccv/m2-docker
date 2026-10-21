@@ -134,8 +134,8 @@
     id.appendChild(el("span", "name", s.name));
     id.appendChild(el("span", "sub", "PHP " + (s.php || "-") + " · " + (s.search || "-")));
     if (wait) id.appendChild(el("span", "busy-text", busy[s.name] + "..."));
-    if (s.blocked) badge(id, "chưa hỗ trợ md", s.blocked);
-    else if (s.note) badge(id, "chưa hỗ trợ md", s.note);
+    if (s.blocked) badge(id, "not supported by md", s.blocked);
+    else if (s.note) badge(id, "not supported by md", s.note);
     if (s.source === "ddev" && !s.blocked) badge(id, "md migrate", "Run md migrate in the site root to move this site to md");
     card.appendChild(id);
     var amber = s.source === "ddev" || !!s.blocked;
