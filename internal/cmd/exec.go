@@ -89,3 +89,7 @@ func newPHPCmd(e *env) *cobra.Command {
 func newComposerCmd(e *env) *cobra.Command {
 	return passthrough("composer [args...]", "Run composer in the web container", e, "composer")
 }
+
+func newBashCmd(e *env) *cobra.Command {
+	return passthrough("bash [args...]", "Open a bash shell in the web container", e, "bash")
+}

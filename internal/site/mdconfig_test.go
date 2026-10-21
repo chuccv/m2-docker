@@ -268,3 +268,31 @@ func TestLoadMDRedisVersion(t *testing.T) {
 		t.Fatalf("%+v %v", s, err)
 	}
 }
+
+func TestCronRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".md", "config.yaml"), "name: b\nphp: \"8.4\"\n")
+	s, err := Load(dir)
+	if err != nil || s.Cron {
+		t.Fatalf("default: %+v %v", s, err)
+	}
+	c, err := ReadMDConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Cron = true
+	if err := WriteMDConfig(dir, c); err != nil {
+		t.Fatal(err)
+	}
+	if s, err = Load(dir); err != nil || !s.Cron {
+		t.Fatalf("on: %+v %v", s, err)
+	}
+	c.Cron = false
+	if err := WriteMDConfig(dir, c); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(filepath.Join(dir, ".md", "config.yaml"))
+	if strings.Contains(string(data), "cron") {
+		t.Fatalf("cron should be omitted:\n%s", data)
+	}
+}

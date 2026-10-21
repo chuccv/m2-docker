@@ -242,3 +242,19 @@ func TestRenderSiteRedisVersion(t *testing.T) {
 		t.Fatalf("7.2: %v\n%s", err, out)
 	}
 }
+
+func TestRenderSiteCron(t *testing.T) {
+	plain, _ := RenderSite(loadSite(t, "ee249-qa"), paths)
+	if strings.Contains(string(plain), "MD_CRON") {
+		t.Fatal("cron env must be absent by default")
+	}
+	s := loadSite(t, "ee249-qa")
+	s.Cron = true
+	out, err := RenderSite(s, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "MD_CRON=1") {
+		t.Fatalf("missing MD_CRON=1\n%s", out)
+	}
+}

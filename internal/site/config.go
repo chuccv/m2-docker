@@ -15,7 +15,7 @@ type Site struct {
 	Name, Root, Type, PHPVersion, DBType, DBVersion, NodeVersion, Webserver string
 	Hostnames                                                               []string
 	SearchVersion, SearchEngine, Varnish, RedisVersion                      string
-	PhpMyAdmin                                                              bool
+	PhpMyAdmin, Cron                                                        bool
 	Addons                                                                  []string
 	Websites                                                                []Website
 }

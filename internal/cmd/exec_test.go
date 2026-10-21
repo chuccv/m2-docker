@@ -107,6 +107,14 @@ func TestPhpAndComposer(t *testing.T) {
 	want(t, f, "docker", "exec", "-i", "-u", "1000", "-w", "/var/www/html", "ddev-ee249-qa-web", "composer", "install", "-n")
 }
 
+func TestBash(t *testing.T) {
+	e, f, _ := testEnv(t, true)
+	if err := exec(t, e, "bash"); err != nil {
+		t.Fatal(err)
+	}
+	want(t, f, "docker", "exec", "-i", "-t", "-u", "1000", "-w", "/var/www/html", "ddev-ee249-qa-web", "bash")
+}
+
 func TestExecDashDash(t *testing.T) {
 	e, f, _ := testEnv(t, false)
 	if err := exec(t, e, "exec", "--", "ls", "-la"); err != nil {

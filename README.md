@@ -27,10 +27,12 @@ From source (Go 1.25+):
     cd /path/to/site
     md up                    # start the site, print its URLs
     md exec <cmd>            # run a command in the web container
+    md bash                  # open a bash shell in the web container
     md magento <args>        # bin/magento
     md mysql                 # mariadb client in the db container (reads stdin: gunzip -c dump.sql.gz | md mysql)
     md xhprof on|off         # profile this site in XHGui
     md xdebug on|off
+    md cron on|off           # Magento cron (supercronic), saved in .md/config.yaml
     md stop                  # stop this site
     md poweroff              # stop everything, including the router
     md snapshot              # dump the database (--list, restore <file>)
@@ -123,6 +125,11 @@ Plus `additional_hostnames` (as `<host>.<domain>`) and `additional_fqdns` from t
 
 After changing `domain`, each site picks it up on its next `md up` / `md restart`. Base URLs stored in a site's database are not changed.
 
+## Cron
+
+- `md cron on|off` runs `bin/magento cron:run` every minute with supercronic inside the web container. Off by default.
+- It saves `cron: true` in `.md/config.yaml` (run `md migrate` first on a DDEV-only site), so it survives `md stop` / `md up`. A running site is switched live, no restart.
+
 ## Profiling
 
 - `md xhprof on` enables XHProf in that site's web container only and prints the XHGui URL (`https://<host>:8142`). No restart: php-fpm reloads.
@@ -147,6 +154,7 @@ The server sends instructions with the setup rules above (install / migrate / `s
 - `logs` (`file`: `exception`, `system`, `debug` or `report` with `id`; `lines`, `grep`)
 - `snapshot_create`, `snapshot_list`, `snapshot_restore`
 - `xdebug`, `xhprof` (`on`; xhprof returns the XHGui URL)
+- `cron` (`on`; persisted in `.md/config.yaml`)
 
 There are no tools for `clean`, `poweroff`, `install` or `migrate`.
 

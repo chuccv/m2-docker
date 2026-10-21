@@ -45,6 +45,7 @@ type MDConfig struct {
 	SearchEngine string      `yaml:"search_engine,omitempty"`
 	Varnish      VarnishSpec `yaml:"varnish,omitempty"`
 	PhpMyAdmin   bool        `yaml:"phpmyadmin,omitempty"`
+	Cron         bool        `yaml:"cron,omitempty"`
 	Node         string      `yaml:"node"`
 	Redis        bool        `yaml:"redis"`
 	RedisVersion string      `yaml:"redis_version,omitempty"`
@@ -94,6 +95,18 @@ func WriteMDConfig(root string, c MDConfig) error {
 		return err
 	}
 	return os.WriteFile(mdConfigPath(root), data, 0o644)
+}
+
+func ReadMDConfig(root string) (MDConfig, error) {
+	var c MDConfig
+	data, err := os.ReadFile(mdConfigPath(root))
+	if err != nil {
+		return c, fmt.Errorf("read md config: %w", err)
+	}
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return c, fmt.Errorf("parse %s: %w", mdConfigPath(root), err)
+	}
+	return c, nil
 }
 
 func loadMD(root string) (Site, error) {
@@ -170,6 +183,7 @@ func loadMD(root string) (Site, error) {
 		SearchEngine:  c.SearchEngine,
 		Varnish:       string(c.Varnish),
 		PhpMyAdmin:    c.PhpMyAdmin,
+		Cron:          c.Cron,
 		RedisVersion:  c.RedisVersion,
 	}
 	if c.Redis {

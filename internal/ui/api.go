@@ -30,6 +30,7 @@ type SiteView struct {
 	Engine  string            `json:"engine"`
 	Blocked string            `json:"blocked"`
 	Note    string            `json:"note"`
+	Cron    bool              `json:"cron"`
 }
 
 func (s *server) discover() []site.Site {
@@ -137,7 +138,7 @@ func (s *server) siteViews() ([]SiteView, error) {
 	running := s.projects()
 	views := []SiteView{}
 	for _, x := range s.discover() {
-		v := SiteView{Name: x.Name, Root: x.Root, Source: "ddev", Status: "stopped", PHP: x.PHPVersion, Search: x.SearchVersion, URLs: map[string]string{}}
+		v := SiteView{Name: x.Name, Root: x.Root, Source: "ddev", Status: "stopped", PHP: x.PHPVersion, Search: x.SearchVersion, URLs: map[string]string{}, Cron: x.Cron}
 		if site.HasMDConfig(x.Root) {
 			v.Source = "md"
 		}

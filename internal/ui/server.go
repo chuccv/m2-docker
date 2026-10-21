@@ -22,6 +22,7 @@ type Actions interface {
 	Up(name string) error
 	Stop(name string) error
 	Restart(name string) error
+	Cron(name string, on bool) error
 	Poweroff() error
 }
 
@@ -162,7 +163,7 @@ func (s *server) release(key string) {
 
 func (s *server) handleSiteAction(w http.ResponseWriter, req *http.Request) {
 	name, action := req.PathValue("name"), req.PathValue("action")
-	if action != "up" && action != "stop" && action != "restart" {
+	if action != "up" && action != "stop" && action != "restart" && action != "cron-on" && action != "cron-off" {
 		http.NotFound(w, req)
 		return
 	}
@@ -191,6 +192,9 @@ func (s *server) dispatch(name, action string) error {
 	views, err := s.siteViews()
 	if err != nil {
 		return err
+	}
+	if action == "cron-on" || action == "cron-off" {
+		return s.actions.Cron(name, action == "cron-on")
 	}
 	for _, v := range views {
 		if v.Name != name {

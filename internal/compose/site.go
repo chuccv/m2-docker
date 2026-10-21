@@ -89,6 +89,9 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 	} else {
 		web.Volumes = append(web.Volumes, p.Home+"/sites/"+s.Name+"/nginx-run.conf:/etc/nginx/md-run.conf:ro")
 	}
+	if s.Cron {
+		web.Environment = append(web.Environment, "MD_CRON=1")
+	}
 	f.Services["web"] = web
 	if p.ComposerAuth != "" {
 		web := f.Services["web"]

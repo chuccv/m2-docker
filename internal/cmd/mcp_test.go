@@ -59,7 +59,7 @@ func TestMCPToolList(t *testing.T) {
 		got = append(got, tool.Name)
 	}
 	sort.Strings(got)
-	want := []string{"exec", "logs", "magento", "site_describe", "site_init", "site_restart", "site_stop", "site_up", "sites_list", "snapshot_create", "snapshot_list", "snapshot_restore", "sql", "xdebug", "xhprof"}
+	want := []string{"cron", "exec", "logs", "magento", "site_describe", "site_init", "site_restart", "site_stop", "site_up", "sites_list", "snapshot_create", "snapshot_list", "snapshot_restore", "sql", "xdebug", "xhprof"}
 	sort.Strings(want)
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("tools %v\nwant %v", got, want)

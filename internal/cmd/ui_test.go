@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"io"
+	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -59,5 +61,16 @@ func TestUIActionsSerialize(t *testing.T) {
 	wg.Wait()
 	if sr.max != 1 {
 		t.Fatalf("max concurrent %d", sr.max)
+	}
+}
+
+func TestUIActionsCron(t *testing.T) {
+	e, _, cfg := mdSiteEnv(t)
+	if err := newUIActions(e).Cron("ee249-qa", true); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(cfg)
+	if !strings.Contains(string(data), "cron: true") {
+		t.Fatalf("config:\n%s", data)
 	}
 }

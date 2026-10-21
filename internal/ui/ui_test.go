@@ -33,7 +33,10 @@ func (f *fakeActions) rec(s string) error {
 func (f *fakeActions) Up(n string) error      { return f.rec("up " + n) }
 func (f *fakeActions) Stop(n string) error    { return f.rec("stop " + n) }
 func (f *fakeActions) Restart(n string) error { return f.rec("restart " + n) }
-func (f *fakeActions) Poweroff() error        { return f.rec("poweroff") }
+func (f *fakeActions) Cron(n string, on bool) error {
+	return f.rec(fmt.Sprintf("cron %s %v", n, on))
+}
+func (f *fakeActions) Poweroff() error { return f.rec("poweroff") }
 
 func do(h http.Handler, method, path, body string, hdr map[string]string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
@@ -355,5 +358,30 @@ func TestPhpMyAdminLink(t *testing.T) {
 	}
 	if _, ok := views["nopma"].URLs["phpmyadmin"]; ok {
 		t.Fatalf("unexpected: %v", views["nopma"].URLs)
+	}
+}
+
+func TestCronAction(t *testing.T) {
+	root, home := t.TempDir(), t.TempDir()
+	writeSite(t, root, "mdsite", "name: mdsite\ntype: magento2\n")
+	os.MkdirAll(filepath.Join(root, "mdsite", ".md"), 0o755)
+	os.WriteFile(filepath.Join(root, "mdsite", ".md", "config.yaml"), []byte("name: mdsite\nphp: \"8.3\"\ncron: true\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"), 0o644)
+	fa := &fakeActions{}
+	h := newServer(home, &run.FakeRunner{}, fa, []string{root})
+	hdr := map[string]string{"X-MD": "1"}
+	for _, p := range []string{"/api/sites/mdsite/cron-on", "/api/sites/mdsite/cron-off"} {
+		if r := do(h, "POST", p, "", hdr); r.Code != 200 {
+			t.Fatalf("%s: %d %s", p, r.Code, r.Body)
+		}
+	}
+	if strings.Join(fa.calls, ",") != "cron mdsite true,cron mdsite false" {
+		t.Fatalf("calls: %v", fa.calls)
+	}
+	if r := do(h, "POST", "/api/sites/mdsite/cron-on", "", nil); r.Code == 200 {
+		t.Fatal("cron-on without X-MD accepted")
+	}
+	r := do(h, "GET", "/api/sites", "", nil)
+	if !strings.Contains(r.Body.String(), `"cron":true`) {
+		t.Fatalf("sites: %s", r.Body)
 	}
 }

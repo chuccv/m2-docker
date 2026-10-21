@@ -351,6 +351,10 @@ func (m mcpServer) toggle(ext string) func(toggleIn) (string, error) {
 	}
 }
 
+func (m mcpServer) cron(in toggleIn) (string, error) {
+	return m.simple(siteIn{in.Site}, func(e *env, n string) error { return e.cron(n, in.On) })
+}
+
 func (m mcpServer) build() *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "md", Version: "1"}, &mcp.ServerOptions{Instructions: mcpInstructions})
 	addTool(s, "sites_list", "List md sites with status, URL and root", m.sitesList)
@@ -368,6 +372,7 @@ func (m mcpServer) build() *mcp.Server {
 	addTool(s, "snapshot_restore", "Restore a snapshot into the site database, a pre-restore snapshot is taken first", m.snapshotRestore)
 	addTool(s, "xdebug", "Turn xdebug on or off in the web container", m.toggle("xdebug"))
 	addTool(s, "xhprof", "Turn xhprof on or off in the web container, on returns the XHGui URL", m.toggle("xhprof"))
+	addTool(s, "cron", "Turn Magento cron (supercronic) on or off for a site; persisted in .md/config.yaml", m.cron)
 	return s
 }
 

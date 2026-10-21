@@ -97,6 +97,7 @@
     var id = el("div");
     id.appendChild(el("span", "name", s.name));
     if (s.urls && s.urls.storefront) id.appendChild(el("span", "host mono", new URL(s.urls.storefront).host));
+    if (s.cron) badge(id, "cron on", "Magento cron (supercronic) is enabled for this site");
     head.appendChild(id);
     var label = wait ? busy[s.name] + "..." : s.status === "ddev" ? "running (ddev)" : s.status;
     head.appendChild(el("span", wait ? "status busy" : "status", label));
@@ -123,6 +124,7 @@
     var btns = el("div", "btns");
     btns.appendChild(actionBtn("Stop", "", s.name, "stop", wait));
     btns.appendChild(actionBtn("Restart", "", s.name, "restart", wait));
+    btns.appendChild(actionBtn(s.cron ? "Cron off" : "Cron on", "", s.name, s.cron ? "cron-off" : "cron-on", wait || s.source !== "md" || s.status !== "running"));
     card.appendChild(btns);
     return card;
   }

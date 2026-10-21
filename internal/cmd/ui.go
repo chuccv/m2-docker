@@ -41,6 +41,12 @@ func (a uiActions) Restart(name string) error {
 	return a.e.restartByName(name)
 }
 
+func (a uiActions) Cron(name string, on bool) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.e.cron(name, on)
+}
+
 func newUICmd(e *env) *cobra.Command {
 	var addr string
 	var port int
