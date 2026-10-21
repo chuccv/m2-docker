@@ -11,7 +11,7 @@ import (
 	"github.com/chuccv/magento2-docker/internal/cmd"
 )
 
-const version = "dev"
+var version = "dev"
 
 func main() {
 	root := &cobra.Command{
