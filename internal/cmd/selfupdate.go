@@ -21,9 +21,9 @@ import (
 
 const releaseAPI = "https://api.github.com/repos/chuccv/magento2-docker/releases/latest"
 
-func newUpdateCmd(e *env) *cobra.Command {
+func newSelfUpdateCmd(e *env) *cobra.Command {
 	return &cobra.Command{
-		Use:   "update",
+		Use:   "self-update",
 		Short: "Update md to the latest GitHub release",
 		Args:  cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
@@ -105,7 +105,7 @@ func selfUpdate(api, current, exe string, out io.Writer) error {
 	}
 	tmp, err := os.CreateTemp(filepath.Dir(exe), ".md-update-*")
 	if errors.Is(err, os.ErrPermission) {
-		return fmt.Errorf("no write access to %s: run `sudo md update`", filepath.Dir(exe))
+		return fmt.Errorf("no write access to %s: run `sudo md self-update`", filepath.Dir(exe))
 	}
 	if err != nil {
 		return err

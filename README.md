@@ -23,9 +23,9 @@ From source (Go 1.25+):
 
     go install github.com/chuccv/magento2-docker/cmd/md@latest
 
-Update a prebuilt binary to the latest release (checks `SHA256SUMS`, replaces the running binary; use `sudo md update` when it lives in `/usr/local/bin`). Source builds report version `dev` and are not updated:
+Update a prebuilt binary to the latest release (checks `SHA256SUMS`, replaces the running binary; use `sudo md self-update` when it lives in `/usr/local/bin`). Source builds report version `dev` and are not updated:
 
-    md update
+    md self-update
 
 ## Quickstart
 

@@ -109,7 +109,7 @@ func TestSelfUpdateNoWriteAccess(t *testing.T) {
 	}
 	t.Cleanup(func() { os.Chmod(dir, 0o755) })
 	err := selfUpdate(srv.URL+"/latest", "v1.0.5", exe, &strings.Builder{})
-	if err == nil || !strings.Contains(err.Error(), "sudo md update") {
+	if err == nil || !strings.Contains(err.Error(), "sudo md self-update") {
 		t.Fatalf("err %v", err)
 	}
 }
