@@ -95,7 +95,7 @@ func TestInitSteps(t *testing.T) {
 	out.Reset()
 	writeFile(filepath.Join(s.Root, "app", "etc", "env.php"), []byte("<?php"))
 	e.printInitSteps(s, 443)
-	if out.Len() != 0 {
+	if !strings.Contains(out.String(), "--db-user=db") {
 		t.Fatalf("out %q", out.String())
 	}
 }

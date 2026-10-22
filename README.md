@@ -79,7 +79,7 @@ For a folder that already has Magento code, e.g. a customer repo plus a DB dump:
 3. Writes `.md/config.yaml` and runs `up`. If `up` fails, the config and containers are removed again.
 4. Checks the domain: adds missing `/etc/hosts` lines (with `sudo` on a terminal, otherwise prints the command), then fetches `https://<name>.<domain>/` and prints the status. A domain problem does not stop the containers.
 
-It never runs composer or `setup:install` and never touches `app/etc/env.php`. When `env.php` is missing it prints the next steps:
+It never runs composer or `setup:install` and never touches `app/etc/env.php`. The DB volume is always new and empty, so it always prints the next steps (an existing `env.php` still points at the old database credentials until step 2):
 
 ```bash
 gunzip -c dump.sql.gz | md mysql

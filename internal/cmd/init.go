@@ -5,7 +5,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -85,12 +84,9 @@ func (e *env) checkDomain(s site.Site, httpsPort int) error {
 }
 
 func (e *env) printInitSteps(s site.Site, httpsPort int) {
-	if fileExists(filepath.Join(s.Root, "app", "etc", "env.php")) {
-		return
-	}
 	url := siteURL(s.Hostnames[0], httpsPort) + "/"
 	w := e.writer()
-	fmt.Fprintln(w, "No app/etc/env.php yet. Next steps:")
+	fmt.Fprintln(w, "The database is new and empty. Next steps:")
 	fmt.Fprintln(w, "  1. gunzip -c dump.sql.gz | md mysql")
 	fmt.Fprintln(w, "  2. md magento setup:config:set --db-host=db --db-name=db --db-user=db --db-password=db --session-save=redis --session-save-redis-host=redis --session-save-redis-db=2 --cache-backend=redis --cache-backend-redis-server=redis --cache-backend-redis-db=0 --page-cache=redis --page-cache-redis-server=redis --page-cache-redis-db=1")
 	fmt.Fprintf(w, "  3. md magento setup:store-config:set --base-url=%s --base-url-secure=%s --use-secure=1 --use-secure-admin=1\n", url, url)
