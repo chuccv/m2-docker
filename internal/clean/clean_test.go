@@ -90,6 +90,7 @@ func TestApplyNeverDeletesProtected(t *testing.T) {
 		{"volume", "md-opensearch-latest-data", ""},
 		{"volume", "md-node-22", ""},
 		{"volume", "ddev-ee249-ln_redis", ""},
+		{"volume", "shop-redis", ""},
 		{"volume", "x-mariadb", ""},
 		{"image", "ddev/ddev-xhgui:v1.25.2", ""},
 		{"volume", "some-other-volume", ""},

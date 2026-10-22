@@ -34,7 +34,7 @@ After rebuilding, a running `md ui` (port 9900) still serves the old binary unti
 Do not change without updating QA tooling (`qa-agent-e2e`, `agent-site.sh`, skills):
 
 - Container names `ddev-<name>-web|db|redis`; DB user/password/database `db`/`db`/`db`; web uid 1000, Magento root `/var/www/html`.
-- Hostnames `<name>.md.site` (base URL, needs `/etc/hosts` via `md hosts --all`) with `<name>.ddev.site` kept as an alias; DB volume `<name>-mariadb`, Redis volume `ddev-<name>_redis` reused as-is.
+- Hostnames `<name>.md.site` (base URL, needs `/etc/hosts` via `md hosts --all`) with `<name>.ddev.site` kept as an alias; DB volume `<name>-mariadb`, Redis volume `ddev-<name>_redis` reused as-is for sites with `.ddev/` (`<name>-redis` for sites made by `md install` / `md init`).
 - Never delete DB volumes automatically; `md clean` deletes only after the user types `yes`.
 
 ## Conventions

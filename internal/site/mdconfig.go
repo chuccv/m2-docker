@@ -186,6 +186,9 @@ func loadMD(root string) (Site, error) {
 		Cron:          c.Cron,
 		RedisVersion:  c.RedisVersion,
 	}
+	if _, err := os.Stat(filepath.Join(root, ".ddev")); err == nil {
+		s.DDEV = true
+	}
 	if c.Redis {
 		s.Addons = []string{"redis"}
 	}

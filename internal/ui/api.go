@@ -231,7 +231,7 @@ func volumeSite(name string) string {
 	if strings.HasPrefix(name, "ddev-") && strings.HasSuffix(name, "_redis") {
 		return strings.TrimSuffix(strings.TrimPrefix(name, "ddev-"), "_redis")
 	}
-	for _, suffix := range []string{"-mariadb", "-mysql"} {
+	for _, suffix := range []string{"-mariadb", "-mysql", "-redis"} {
 		if i := strings.Index(name, suffix); i > 0 {
 			return name[:i]
 		}

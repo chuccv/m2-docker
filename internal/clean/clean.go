@@ -33,7 +33,7 @@ func isDBVolume(v string) bool {
 }
 
 func protectedVolume(v string) bool {
-	if strings.HasPrefix(v, "md-") || isDBVolume(v) {
+	if strings.HasPrefix(v, "md-") || isDBVolume(v) || strings.HasSuffix(v, "-redis") {
 		return true
 	}
 	return strings.HasPrefix(v, "ddev-") && strings.HasSuffix(v, "_redis")

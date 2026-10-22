@@ -15,7 +15,7 @@ type Site struct {
 	Name, Root, Type, PHPVersion, DBType, DBVersion, NodeVersion, Webserver string
 	Hostnames                                                               []string
 	SearchVersion, SearchEngine, Varnish, RedisVersion                      string
-	PhpMyAdmin, Cron                                                        bool
+	PhpMyAdmin, Cron, DDEV                                                  bool
 	Addons                                                                  []string
 	Websites                                                                []Website
 }
@@ -58,6 +58,7 @@ func Load(root string) (Site, error) {
 	s := Site{
 		Name:        c.Name,
 		Root:        root,
+		DDEV:        true,
 		Type:        c.Type,
 		PHPVersion:  c.PHPVersion,
 		DBType:      c.Database.Type,

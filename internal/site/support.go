@@ -41,6 +41,13 @@ func (s Site) DBVolume() string {
 	return s.Name + "-mariadb"
 }
 
+func (s Site) RedisVolume() string {
+	if s.DDEV {
+		return "ddev-" + s.Name + "_redis"
+	}
+	return s.Name + "-redis"
+}
+
 func (s Site) DBClient() string {
 	if s.isMySQL() {
 		return "mysql"

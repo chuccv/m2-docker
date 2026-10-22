@@ -104,7 +104,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 		if s.RedisVersion != "" {
 			redisImage = "redis:" + s.RedisVersion
 		}
-		redisVol := "ddev-" + s.Name + "_redis"
+		redisVol := s.RedisVolume()
 		f.Services["redis"] = service{
 			Image:         redisImage,
 			ContainerName: "ddev-" + s.Name + "-redis",

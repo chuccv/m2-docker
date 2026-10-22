@@ -128,7 +128,7 @@ func (e *env) ensureRedisVolume(s site.Site) error {
 	if !s.HasAddon("redis") {
 		return nil
 	}
-	vol := "ddev-" + s.Name + "_redis"
+	vol := s.RedisVolume()
 	if _, err := e.runner.Run("docker", "volume", "inspect", vol); err == nil {
 		return nil
 	}

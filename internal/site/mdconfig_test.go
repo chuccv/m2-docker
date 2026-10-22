@@ -296,3 +296,12 @@ func TestCronRoundTrip(t *testing.T) {
 		t.Fatalf("cron should be omitted:\n%s", data)
 	}
 }
+
+func TestRedisVolume(t *testing.T) {
+	if v := load(t, "md-site").RedisVolume(); v != "md-site-redis" {
+		t.Fatalf("md site: %s", v)
+	}
+	if v := load(t, "ee249-qa").RedisVolume(); v != "ddev-ee249-qa_redis" {
+		t.Fatalf("ddev site: %s", v)
+	}
+}
