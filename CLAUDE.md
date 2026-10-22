@@ -40,5 +40,5 @@ Do not change without updating QA tooling (`qa-agent-e2e`, `agent-site.sh`, skil
 ## Conventions
 
 - No comments in code.
-- Some user-facing messages are in Vietnamese; match the surrounding file.
+- User-facing messages are in English.
 - Any action against a real site under `/var/www/html/*` requires a claim: `AGENT_NAME=<name> /home/neil/brain/tools/agent-site.sh claim <site> "<task>"`, then `release`.

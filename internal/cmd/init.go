@@ -61,24 +61,24 @@ func (e *env) hostsCommand(s site.Site) string {
 
 func (e *env) warnHosts(s site.Site) {
 	if len(hostsLines([]site.Site{s}, e.lookupHost())) > 0 {
-		fmt.Fprintf(e.errw(), "warning: thiếu dòng trong /etc/hosts, domain chưa truy cập được. Chạy: %s\n", e.hostsCommand(s))
+		fmt.Fprintf(e.errw(), "warning: /etc/hosts is missing lines, the domain is not reachable yet. Run: %s\n", e.hostsCommand(s))
 	}
 }
 
 func (e *env) checkDomain(s site.Site, httpsPort int) error {
 	if lines := hostsLines([]site.Site{s}, e.lookupHost()); len(lines) > 0 {
 		if !e.tty() {
-			return fmt.Errorf("thiếu dòng trong /etc/hosts (containers vẫn chạy). Chạy: %s", e.hostsCommand(s))
+			return fmt.Errorf("/etc/hosts is missing lines (containers are still running). Run: %s", e.hostsCommand(s))
 		}
-		fmt.Fprintln(e.writer(), "Thêm vào /etc/hosts (sudo sẽ hỏi password):")
+		fmt.Fprintln(e.writer(), "Adding to /etc/hosts (sudo will ask for your password):")
 		if err := e.runner.Pipe(strings.NewReader(strings.Join(lines, "\n")+"\n"), io.Discard, "sudo", "tee", "-a", "/etc/hosts"); err != nil {
-			return fmt.Errorf("sudo tee -a /etc/hosts: %w (containers vẫn chạy)", err)
+			return fmt.Errorf("sudo tee -a /etc/hosts: %w (containers are still running)", err)
 		}
 	}
 	url := siteURL(s.Hostnames[0], httpsPort) + "/"
 	status, loc, err := e.probe(url)
 	if err != nil {
-		return fmt.Errorf("%s không truy cập được: %w (containers vẫn chạy)", url, err)
+		return fmt.Errorf("%s is not reachable: %w (containers are still running)", url, err)
 	}
 	fmt.Fprintf(e.writer(), "%s → %d %s\n", url, status, loc)
 	return nil
@@ -90,7 +90,7 @@ func (e *env) printInitSteps(s site.Site, httpsPort int) {
 	}
 	url := siteURL(s.Hostnames[0], httpsPort) + "/"
 	w := e.writer()
-	fmt.Fprintln(w, "Chưa có app/etc/env.php. Bước tiếp theo:")
+	fmt.Fprintln(w, "No app/etc/env.php yet. Next steps:")
 	fmt.Fprintln(w, "  1. gunzip -c dump.sql.gz | md mysql")
 	fmt.Fprintln(w, "  2. md magento setup:config:set --db-host=db --db-name=db --db-user=db --db-password=db --session-save=redis --session-save-redis-host=redis --session-save-redis-db=2 --cache-backend=redis --cache-backend-redis-server=redis --cache-backend-redis-db=0 --page-cache=redis --page-cache-redis-server=redis --page-cache-redis-db=1")
 	fmt.Fprintf(w, "  3. md magento setup:store-config:set --base-url=%s --base-url-secure=%s --use-secure=1 --use-secure-admin=1\n", url, url)

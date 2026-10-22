@@ -155,7 +155,7 @@ func TestMigrateRefusesWhenMDConfigExists(t *testing.T) {
 	fx := msetup(t)
 	site.WriteMDConfig(fx.root, site.MDConfig{Name: "mig"})
 	cs, err := fx.migrate()
-	if err == nil || !strings.Contains(err.Error(), "đã migrate") || len(cs) != 0 || len(fx.upSites) != 0 {
+	if err == nil || !strings.Contains(err.Error(), "already migrated") || len(cs) != 0 || len(fx.upSites) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
 	}
 }
@@ -307,7 +307,7 @@ func TestMigrateWarnsDDEVNginx(t *testing.T) {
 	os.Stderr = old
 	wr.Close()
 	out, _ := io.ReadAll(rd)
-	if err != nil || !strings.Contains(string(out), "nginx custom của DDEV") {
+	if err != nil || !strings.Contains(string(out), "DDEV custom nginx config") {
 		t.Fatalf("err %v out %q", err, out)
 	}
 }
@@ -382,7 +382,7 @@ func TestMigrateRollbackPrintsEnvPhpHintNoAutoRestore(t *testing.T) {
 	os.Stderr = old
 	wr.Close()
 	out, _ := io.ReadAll(rd)
-	want := "env.php đã bị md sửa (index prefix/base_url). Bản gốc: " + bak + ". Khôi phục: cp " + bak + " " + env
+	want := "env.php was changed by md (index prefix/base_url). Original: " + bak + ". Restore: cp " + bak + " " + env
 	if err == nil || !strings.Contains(string(out), want) {
 		t.Fatalf("err %v out %q", err, out)
 	}

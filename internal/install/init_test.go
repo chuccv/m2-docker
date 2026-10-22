@@ -112,7 +112,7 @@ func TestInitRefusals(t *testing.T) {
 	}
 	fx = initSetup(t, ceLock)
 	fx.f.Err["docker volume inspect shop-mariadb"] = nil
-	if _, err := Init(fx.opts, fx.f, fx.home); err == nil || !strings.Contains(err.Error(), "đã tồn tại") {
+	if _, err := Init(fx.opts, fx.f, fx.home); err == nil || !strings.Contains(err.Error(), "already exists") {
 		t.Fatalf("err %v", err)
 	}
 }

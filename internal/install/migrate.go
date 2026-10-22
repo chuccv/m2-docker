@@ -58,10 +58,10 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, ignoreC
 		return err
 	}
 	if site.HasMDConfig(root) {
-		return fmt.Errorf("%s đã migrate: dùng `md up`", root)
+		return fmt.Errorf("%s is already migrated: use `md up`", root)
 	}
 	if !exists(filepath.Join(root, ".ddev", "config.yaml")) {
-		return fmt.Errorf("%s không có .ddev/config.yaml: không có gì để migrate", root)
+		return fmt.Errorf("%s has no .ddev/config.yaml, nothing to migrate: use `md init` for a folder with Magento code", root)
 	}
 	s, err := site.Load(root)
 	if err != nil {
@@ -111,7 +111,7 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, ignoreC
 			}
 		}
 		if backedUp {
-			fmt.Fprintf(os.Stderr, "env.php đã bị md sửa (index prefix/base_url). Bản gốc: %s. Khôi phục: cp %s %s\n", backup, backup, envPath)
+			fmt.Fprintf(os.Stderr, "env.php was changed by md (index prefix/base_url). Original: %s. Restore: cp %s %s\n", backup, backup, envPath)
 		}
 	}()
 	if err := site.WriteMDConfig(root, FromDDEV(s)); err != nil {
@@ -156,7 +156,7 @@ func Migrate(root string, r run.Runner, home string, ports config.Ports, ignoreC
 func warnDDEVNginx(root string) {
 	for _, g := range []string{"nginx_full", "nginx"} {
 		if m, _ := filepath.Glob(filepath.Join(root, ".ddev", g, "*.conf")); len(m) > 0 {
-			fmt.Fprintln(os.Stderr, "warning: nginx custom của DDEV không được dùng; khai báo websites trong .md/config.yaml")
+			fmt.Fprintln(os.Stderr, "warning: DDEV custom nginx config is not used; declare websites in .md/config.yaml")
 			return
 		}
 	}

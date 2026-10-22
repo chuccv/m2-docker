@@ -181,7 +181,7 @@ func TestWarnForeignRedirects(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := e.out.(*strings.Builder).String()
-	if !strings.Contains(out, "warning: https://ee249-qa.md.site/ redirect sang https://old.ddev.site/") {
+	if !strings.Contains(out, "warning: https://ee249-qa.md.site/ redirects to https://old.ddev.site/") {
 		t.Fatalf("got %s", out)
 	}
 }

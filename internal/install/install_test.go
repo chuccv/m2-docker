@@ -255,7 +255,7 @@ func TestInstallRefusesEnvPhpWithoutConfig(t *testing.T) {
 	os.MkdirAll(filepath.Join(fx.root, "app", "etc"), 0o755)
 	os.WriteFile(filepath.Join(fx.root, "app", "etc", "env.php"), []byte("<?php"), 0o644)
 	cs, err := fx.run()
-	if err == nil || !strings.Contains(err.Error(), "folder không trống") || len(cs) != 0 {
+	if err == nil || !strings.Contains(err.Error(), "folder is not empty") || len(cs) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
 	}
 }
@@ -285,7 +285,7 @@ func TestInstallRefusesNonBlankFolder(t *testing.T) {
 	fx := setup(t)
 	os.WriteFile(filepath.Join(fx.root, "composer.json"), []byte("{}"), 0o644)
 	cs, err := fx.run()
-	if err == nil || !strings.Contains(err.Error(), "folder không trống") || len(cs) != 0 || site.HasMDConfig(fx.root) {
+	if err == nil || !strings.Contains(err.Error(), "folder is not empty") || len(cs) != 0 || site.HasMDConfig(fx.root) {
 		t.Fatalf("err %v calls %v", err, cs)
 	}
 }
@@ -331,7 +331,7 @@ func TestInstallRefusesExistingDBVolume(t *testing.T) {
 	fx := setup(t)
 	delete(fx.f.Err, "docker volume inspect shop-mariadb")
 	cs, err := fx.run()
-	if err == nil || !strings.Contains(err.Error(), "volume DB shop-mariadb đã tồn tại — có thể là DB của site khác") {
+	if err == nil || !strings.Contains(err.Error(), "DB volume shop-mariadb already exists — it may belong to another site") {
 		t.Fatalf("err %v", err)
 	}
 	if site.HasMDConfig(fx.root) || exists(filepath.Join(fx.root, ".md")) || len(fx.upCalls) != 0 || idx(cs, "volume create") >= 0 {

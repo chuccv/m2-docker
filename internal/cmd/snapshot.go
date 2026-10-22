@@ -121,7 +121,7 @@ func newCleanCmd(e *env) *cobra.Command {
 				}
 			}
 			if len(orphans) > 0 {
-				fmt.Fprintln(e.out, "DB mồ côi — xoá tay:")
+				fmt.Fprintln(e.out, "orphan DBs — delete by hand:")
 				for _, it := range orphans {
 					fmt.Fprintf(e.out, "  docker volume rm %s\n", it.Name)
 				}

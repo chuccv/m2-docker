@@ -510,7 +510,7 @@ func TestMigrateCmd(t *testing.T) {
 func TestMigrateCmdRefusesMigratedSite(t *testing.T) {
 	e, f, _ := upEnv(t)
 	err := exec(t, e, "migrate")
-	if err == nil || !strings.Contains(err.Error(), "đã migrate") || len(f.Calls) != 0 {
+	if err == nil || !strings.Contains(err.Error(), "already migrated") || len(f.Calls) != 0 {
 		t.Fatalf("err %v calls %v", err, f.Calls)
 	}
 }
@@ -548,7 +548,7 @@ func TestMigrateCmdNotesMutagenOnce(t *testing.T) {
 	if err := exec(t, e, "migrate"); err != nil {
 		t.Fatal(err)
 	}
-	if n := strings.Count(e.out.(*strings.Builder).String(), "mutagen bỏ qua trên Linux"); n != 1 {
+	if n := strings.Count(e.out.(*strings.Builder).String(), "mutagen ignored on Linux"); n != 1 {
 		t.Fatalf("note printed %d times", n)
 	}
 }

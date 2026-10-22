@@ -59,7 +59,7 @@ func lockHome(home string, w io.Writer) (func(), error) {
 		return nil, err
 	}
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		fmt.Fprintln(w, "đang chờ lệnh md khác chạy xong...")
+		fmt.Fprintln(w, "waiting for another md command to finish...")
 		if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
 			f.Close()
 			return nil, err

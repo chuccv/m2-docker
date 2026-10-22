@@ -140,7 +140,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 		return err
 	}
 	if site.HasMDConfig(root) {
-		return fmt.Errorf("%s đã có .md/config.yaml: dùng `md up`", root)
+		return fmt.Errorf("%s already has .md/config.yaml: use `md up`", root)
 	}
 	if exists(filepath.Join(root, ".ddev")) {
 		return fmt.Errorf("%s has a .ddev folder: use `md migrate`", root)
@@ -150,7 +150,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 		return err
 	}
 	if !blank {
-		return fmt.Errorf("folder không trống: %s (md install chỉ chạy trên folder trắng)", root)
+		return fmt.Errorf("folder is not empty: %s (md install only runs on a blank folder)", root)
 	}
 	if o.Edition != "community" && o.Edition != "enterprise" {
 		return fmt.Errorf("invalid edition %q: use community or enterprise", o.Edition)
@@ -179,7 +179,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 	cfg.Magento.Edition = o.Edition
 	vol := site.Site{Name: name, DBType: cfg.Database.Type}.DBVolume()
 	if _, verr := r.Run("docker", "volume", "inspect", vol); verr == nil {
-		return fmt.Errorf("volume DB %s đã tồn tại — có thể là DB của site khác", vol)
+		return fmt.Errorf("DB volume %s already exists — it may belong to another site", vol)
 	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return err
@@ -205,7 +205,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 			}
 		}
 		if volCreated {
-			err = fmt.Errorf("%w; volume DB %s được giữ lại (không xoá data); nếu cài chưa xong có thể chạy `docker volume rm %s`", err, vol, vol)
+			err = fmt.Errorf("%w; DB volume %s was kept (data not deleted); if the install did not finish you can run `docker volume rm %s`", err, vol, vol)
 		}
 	}()
 	if err := site.WriteMDConfig(root, cfg); err != nil {

@@ -23,17 +23,17 @@ func Init(o InitOptions, r run.Runner, home string) (s site.Site, err error) {
 		return site.Site{}, err
 	}
 	if site.HasMDConfig(root) {
-		return site.Site{}, fmt.Errorf("%s đã có .md/config.yaml: dùng `md up`", root)
+		return site.Site{}, fmt.Errorf("%s already has .md/config.yaml: use `md up`", root)
 	}
 	if exists(filepath.Join(root, ".ddev")) {
-		return site.Site{}, fmt.Errorf("%s có folder .ddev: dùng `md migrate`", root)
+		return site.Site{}, fmt.Errorf("%s has a .ddev folder: use `md migrate`", root)
 	}
 	blank, err := IsBlank(root)
 	if err != nil {
 		return site.Site{}, err
 	}
 	if blank {
-		return site.Site{}, fmt.Errorf("folder trắng: %s (dùng `md install` để cài Magento mới)", root)
+		return site.Site{}, fmt.Errorf("blank folder: %s (use `md install` to install a new Magento)", root)
 	}
 	version, edition := o.Version, "community"
 	if v, e, derr := MagentoPackage(root); derr == nil {
@@ -42,7 +42,7 @@ func Init(o InitOptions, r run.Runner, home string) (s site.Site, err error) {
 		}
 		edition = e
 	} else if version == "" {
-		return site.Site{}, fmt.Errorf("không đọc được version Magento từ composer.lock (%v): thêm --version", derr)
+		return site.Site{}, fmt.Errorf("cannot read the Magento version from composer.lock (%v): pass --version", derr)
 	}
 	st, err := StackFor(home, version)
 	if err != nil {
@@ -62,7 +62,7 @@ func Init(o InitOptions, r run.Runner, home string) (s site.Site, err error) {
 	cfg.Magento.Edition = edition
 	vol := site.Site{Name: name, DBType: cfg.Database.Type}.DBVolume()
 	if _, verr := r.Run("docker", "volume", "inspect", vol); verr == nil {
-		return site.Site{}, fmt.Errorf("volume DB %s đã tồn tại — có thể là DB của site khác", vol)
+		return site.Site{}, fmt.Errorf("DB volume %s already exists — it may belong to another site", vol)
 	}
 	mdDir := filepath.Join(root, ".md")
 	mdDirExisted := exists(mdDir)
@@ -85,7 +85,7 @@ func Init(o InitOptions, r run.Runner, home string) (s site.Site, err error) {
 			}
 		}
 		if volCreated {
-			err = fmt.Errorf("%w; volume DB %s được giữ lại (không xoá data); có thể chạy `docker volume rm %s`", err, vol, vol)
+			err = fmt.Errorf("%w; DB volume %s was kept (data not deleted); you can run `docker volume rm %s`", err, vol, vol)
 		}
 	}()
 	if err = site.WriteMDConfig(root, cfg); err != nil {

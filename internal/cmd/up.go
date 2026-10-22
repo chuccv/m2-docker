@@ -182,7 +182,7 @@ func (e *env) up(s site.Site, home string) error {
 		return err
 	}
 	if s.HasAddon("mutagen") {
-		fmt.Fprintln(e.writer(), "mutagen bỏ qua trên Linux")
+		fmt.Fprintln(e.writer(), "mutagen ignored on Linux")
 	}
 	if err := guard.CheckNoDDEV(e.runner, s, cfg.Ports); err != nil {
 		return err
@@ -347,7 +347,7 @@ func (e *env) warnForeignRedirects(s site.Site, httpsPort int) {
 		if err != nil || u.Host == "" || u.Hostname() == h {
 			continue
 		}
-		fmt.Fprintf(e.writer(), "warning: %s redirect sang %s. Kiểm tra core_config_data web/%%_url của scope đó.\n", url, loc)
+		fmt.Fprintf(e.writer(), "warning: %s redirects to %s. Check core_config_data web/%%_url for that scope.\n", url, loc)
 	}
 }
 
@@ -382,7 +382,7 @@ func (e *env) upByName(name string) error {
 		return err
 	}
 	if !site.HasMDConfig(s.Root) {
-		return fmt.Errorf("%s chưa có .md/config.yaml: chạy `md migrate` trước", s.Root)
+		return fmt.Errorf("%s has no .md/config.yaml: run `md migrate` first", s.Root)
 	}
 	home, err := e.home()
 	if err != nil {
