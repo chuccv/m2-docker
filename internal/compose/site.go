@@ -44,13 +44,13 @@ func dbService(s site.Site, vol string, labels map[string]string) service {
 		ContainerName: "ddev-" + s.Name + "-db",
 		Restart:       "no",
 		User:          "1000:1000",
-		Volumes:       []string{vol + ":/var/lib/mysql"},
+		Volumes:       []string{vol + ":/var/lib/mysql:nocopy"},
 		Labels:        labels,
 	}
 	if s.DBType == "mysql" {
 		svc.Environment = []string{"MYSQL_USER=db", "MYSQL_PASSWORD=db", "MYSQL_DATABASE=db", "MYSQL_ROOT_PASSWORD=root"}
 	} else {
-		svc.Environment = []string{"MARIADB_USER=db", "MARIADB_PASSWORD=db", "MARIADB_DATABASE=db"}
+		svc.Environment = []string{"MARIADB_USER=db", "MARIADB_PASSWORD=db", "MARIADB_DATABASE=db", "MARIADB_ROOT_PASSWORD=root"}
 	}
 	return svc
 }

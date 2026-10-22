@@ -10,7 +10,7 @@ services:
       - MYSQL_DATABASE=db
       - MYSQL_ROOT_PASSWORD=root
     volumes:
-      - ee249-qa-mysql:/var/lib/mysql
+      - ee249-qa-mysql:/var/lib/mysql:nocopy
     labels:
       com.md.managed: "true"
   redis:

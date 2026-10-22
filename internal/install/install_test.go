@@ -82,6 +82,7 @@ func TestInstallOrderEmptyDir(t *testing.T) {
 	}
 	order := []string{
 		"docker volume create --label com.md.db=mariadb_11.4 shop-mariadb",
+		"docker run --rm --user 0 --entrypoint chown --volume shop-mariadb:/var/lib/mysql:nocopy mariadb:11.4 1000:1000 /var/lib/mysql",
 		web + "rm -rf /tmp/md-install",
 		web + "composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition=2.4.8 /tmp/md-install",
 		web + "cp -a /tmp/md-install/. /var/www/html/",

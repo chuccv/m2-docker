@@ -211,7 +211,7 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 	if err := site.WriteMDConfig(root, cfg); err != nil {
 		return err
 	}
-	if _, err := r.Run("docker", "volume", "create", "--label", "com.md.db="+st.Database.Type+"_"+st.Database.Version, vol); err != nil {
+	if err := createDBVolume(r, st, vol); err != nil {
 		return err
 	}
 	volCreated = true
@@ -279,4 +279,13 @@ func Install(o Options, r run.Runner, home string, ports config.Ports) (err erro
 	}
 	fmt.Fprintf(out, "Storefront: %s\nAdmin: %sadmin\nUser: %s\nPassword: %s\n", url, url, o.AdminUser, o.AdminPassword)
 	return nil
+}
+
+func createDBVolume(r run.Runner, st Stack, vol string) error {
+	if _, err := r.Run("docker", "volume", "create", "--label", "com.md.db="+st.Database.Type+"_"+st.Database.Version, vol); err != nil {
+		return err
+	}
+	image := site.Site{DBType: st.Database.Type, DBVersion: st.Database.Version}.DBImage()
+	_, err := r.Run("docker", "run", "--rm", "--user", "0", "--entrypoint", "chown", "--volume", vol+":/var/lib/mysql:nocopy", image, "1000:1000", "/var/lib/mysql")
+	return err
 }

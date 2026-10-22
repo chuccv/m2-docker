@@ -91,7 +91,7 @@ func Init(o InitOptions, r run.Runner, home string) (s site.Site, err error) {
 	if err = site.WriteMDConfig(root, cfg); err != nil {
 		return site.Site{}, err
 	}
-	if _, err = r.Run("docker", "volume", "create", "--label", "com.md.db="+st.Database.Type+"_"+st.Database.Version, vol); err != nil {
+	if err = createDBVolume(r, st, vol); err != nil {
 		return site.Site{}, err
 	}
 	volCreated = true

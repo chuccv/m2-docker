@@ -8,8 +8,9 @@ services:
       - MARIADB_USER=db
       - MARIADB_PASSWORD=db
       - MARIADB_DATABASE=db
+      - MARIADB_ROOT_PASSWORD=root
     volumes:
-      - pfsm248-mariadb:/var/lib/mysql
+      - pfsm248-mariadb:/var/lib/mysql:nocopy
     labels:
       com.md.managed: "true"
   web:

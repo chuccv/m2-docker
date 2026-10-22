@@ -8,8 +8,9 @@ services:
       - MARIADB_USER=db
       - MARIADB_PASSWORD=db
       - MARIADB_DATABASE=db
+      - MARIADB_ROOT_PASSWORD=root
     volumes:
-      - ee249-qa-mariadb:/var/lib/mysql
+      - ee249-qa-mariadb:/var/lib/mysql:nocopy
     labels:
       com.md.managed: "true"
   redis:
