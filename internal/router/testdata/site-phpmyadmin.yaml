@@ -5,6 +5,10 @@ http:
                 permanent: true
                 port: "443"
                 scheme: https
+        ee249-qa-xhgui-site:
+            headers:
+                customRequestHeaders:
+                    X-Md-Site: ee249-qa.
     routers:
         ee249-qa-mailpit:
             entryPoints:
@@ -44,11 +48,15 @@ http:
         ee249-qa-xhgui:
             entryPoints:
                 - xhgui
+            middlewares:
+                - ee249-qa-xhgui-site
             rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
             service: ee249-qa-xhgui
         ee249-qa-xhgui-secure:
             entryPoints:
                 - xhgui-secure
+            middlewares:
+                - ee249-qa-xhgui-site
             rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
             service: ee249-qa-xhgui
             tls: {}

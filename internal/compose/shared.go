@@ -9,6 +9,10 @@ import (
 )
 
 const XHGuiConfig = `<?php
+if (!isset($_GET['server_name']) && !empty($_SERVER['HTTP_X_MD_SITE'])) {
+    $_GET['server_name'] = $_SERVER['HTTP_X_MD_SITE'];
+    $_SERVER['QUERY_STRING'] = http_build_query($_GET);
+}
 return [
     'save.handler' => 'pdo',
     'pdo' => [

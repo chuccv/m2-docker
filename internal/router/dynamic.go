@@ -25,6 +25,7 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 	mailpit := s.Name + "-mailpit"
 	xhgui := s.Name + "-xhgui"
 	redirect := s.Name + "-https"
+	xhguiSite := xhgui + "-site"
 	secure := func(entry, service string) m {
 		return m{"rule": rule, "entryPoints": []string{entry}, "service": service, "tls": m{}}
 	}
@@ -45,11 +46,12 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 				web:                 m{"rule": rule, "entryPoints": []string{"web"}, "middlewares": []string{redirect}, "service": web},
 				mailpit + "-secure": secure("mailpit-secure", mailpit),
 				mailpit:             plain("mailpit", mailpit),
-				xhgui + "-secure":   secure("xhgui-secure", xhgui),
-				xhgui:               plain("xhgui", xhgui),
+				xhgui + "-secure":   withMiddleware(secure("xhgui-secure", xhgui), xhguiSite),
+				xhgui:               withMiddleware(plain("xhgui", xhgui), xhguiSite),
 			},
 			"middlewares": m{
-				redirect: m{"redirectScheme": m{"scheme": "https", "port": strconv.Itoa(ports.HTTPS), "permanent": true}},
+				redirect:  m{"redirectScheme": m{"scheme": "https", "port": strconv.Itoa(ports.HTTPS), "permanent": true}},
+				xhguiSite: m{"headers": m{"customRequestHeaders": m{"X-Md-Site": s.Name + "."}}},
 			},
 			"services": m{
 				web:     svc(front),
@@ -69,6 +71,11 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 	}
 	out, _ := yaml.Marshal(doc)
 	return out
+}
+
+func withMiddleware(r m, middleware string) m {
+	r["middlewares"] = []string{middleware}
+	return r
 }
 
 func WriteSite(s site.Site, crt, key, home string, ports config.Ports) error {
