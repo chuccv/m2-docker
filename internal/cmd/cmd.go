@@ -72,7 +72,7 @@ func register(root *cobra.Command, e *env) {
 	root.AddCommand(newUpCmd(e), newStopCmd(e), newRestartCmd(e), newPoweroffCmd(e), newListCmd(e), newDescribeCmd(e))
 	root.AddCommand(newExecCmd(e), newMagentoCmd(e), newPHPCmd(e), newComposerCmd(e), newMySQLCmd(e), newBashCmd(e))
 	root.AddCommand(newToggleCmd(e, "xdebug"), newToggleCmd(e, "xhprof"), newCronCmd(e))
-	root.AddCommand(newSnapshotCmd(e), newCleanCmd(e), newInstallCmd(e), newMigrateCmd(e), newInitCmd(e), newUICmd(e), newMCPCmd(e))
+	root.AddCommand(newSnapshotCmd(e), newCleanCmd(e), newInstallCmd(e), newMigrateCmd(e), newInitCmd(e), newUICmd(e), newMCPCmd(e), newUpdateCmd(e))
 }
 
 func Register(root *cobra.Command) {
