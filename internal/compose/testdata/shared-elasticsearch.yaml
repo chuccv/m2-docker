@@ -63,6 +63,7 @@ services:
       - --entrypoints.xhgui-secure.address=:8142
       - --entrypoints.phpmyadmin.address=:8036
       - --entrypoints.phpmyadmin-secure.address=:8037
+      - --entrypoints.web.forwardedHeaders.insecure=true
     ports:
       - 127.0.0.1:80:80
       - 127.0.0.1:443:443

@@ -64,6 +64,7 @@ services:
       - --entrypoints.xhgui-secure.address=:9142
       - --entrypoints.phpmyadmin.address=:9036
       - --entrypoints.phpmyadmin-secure.address=:9037
+      - --entrypoints.web.forwardedHeaders.insecure=true
     ports:
       - 127.0.0.1:9080:9080
       - 127.0.0.1:9443:9443

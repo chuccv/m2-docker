@@ -61,6 +61,7 @@ func RenderShared(searchVersions []string, cfg config.Config, p Paths) ([]byte, 
 		cmd = append(cmd, fmt.Sprintf("--entrypoints.%s.address=:%d", e.name, e.port))
 		portMaps = append(portMaps, fmt.Sprintf("%s%d:%d", bind, e.port, e.port))
 	}
+	cmd = append(cmd, "--entrypoints.web.forwardedHeaders.insecure=true")
 
 	f := file{
 		Services: map[string]service{
