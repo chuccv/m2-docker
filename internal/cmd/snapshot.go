@@ -116,7 +116,7 @@ func newCleanCmd(e *env) *cobra.Command {
 			for _, kind := range []string{"image", "buildcache", "volume"} {
 				for _, it := range del {
 					if it.Kind == kind {
-						fmt.Fprintf(e.out, "%-10s %s %s\n", it.Kind, it.Name, it.Size)
+						fmt.Fprintf(e.out, "%-10s %s %s  %s\n", it.Kind, it.Name, it.Size, it.Info)
 					}
 				}
 			}

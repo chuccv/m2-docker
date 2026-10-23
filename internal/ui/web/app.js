@@ -136,9 +136,10 @@
     id.appendChild(el("span", "name", s.name));
     id.appendChild(el("span", "sub", "PHP " + (s.php || "-") + " · " + (s.search || "-")));
     if (wait) id.appendChild(el("span", "busy-text", busy[s.name] + "..."));
-    if (s.blocked) badge(id, "not supported by md", s.blocked);
-    else if (s.note) badge(id, "not supported by md", s.note);
-    if (s.source === "ddev" && !s.blocked) badge(id, "md migrate", "Run md migrate in the site root to move this site to md");
+    if (s.blocked) {
+      badge(id, "not supported by md", s.blocked);
+      id.appendChild(el("span", "sub", s.blocked));
+    } else if (s.source === "ddev") badge(id, "md migrate", "Run md migrate in the site root to move this site to md" + (s.note ? " (it pins search \"latest\" to the version of the Magento stack)" : ""));
     card.appendChild(id);
     var amber = s.source === "ddev" || !!s.blocked;
     card.appendChild(actionBtn("Up", amber ? "dark amber" : "dark", s.name, "up", wait || !!s.blocked || !!s.note));
@@ -213,13 +214,17 @@
   function renderDisk() {
     if (!disk) return;
     var q = $("filter").value.trim().toLowerCase();
-    var keep = function (it) { return !q || (it.group + " " + it.name).toLowerCase().indexOf(q) >= 0; };
+    var keep = function (it) { return !q || (it.group + " " + it.name + " " + it.meta).toLowerCase().indexOf(q) >= 0; };
     tiles("images", disk.images.map(function (i) {
-      var used = +i.containers ? (i.used_by ? "used by " + i.used_by : "in use: " + i.containers) : "unused";
-      return { group: i.repo === "<none>" ? "untagged (old builds)" : i.repo, name: i.tag, size: i.size, meta: used, idle: !+i.containers };
+      var used = i.used_by ? (i.used_by.indexOf(",") >= 0 ? "shared, used by " : "used by ") + i.used_by : (+i.containers ? "in use: " + i.containers : "unused");
+      var group = i.repo === "<none>" ? "untagged (old builds)" : (i.used_by && i.used_by.indexOf(",") >= 0 ? "shared: " : "") + i.repo;
+      return { group: group, name: i.tag, size: i.size, meta: used, idle: !i.used_by && !+i.containers };
     }).filter(keep));
     tiles("volumes", disk.volumes.map(function (v) {
-      return { group: v.site || "no site", name: v.name, size: v.size, meta: "", idle: !v.site };
+      var shared = v.name.indexOf("md-") === 0;
+      var m = v.name.match(/(opensearch|elasticsearch)-([0-9.]+)-/);
+      var service = m ? m[1] + " " + m[2] : v.name.indexOf("md-node-") === 0 ? "node" : v.name.indexOf("xhgui") >= 0 ? "xhgui" : "md";
+      return { group: v.site || (shared ? "shared: " + service : "no site"), name: v.name, size: v.size, meta: v.info || "", idle: !v.site && !shared };
     }).filter(keep));
   }
 
@@ -253,7 +258,7 @@
 
   $("plan").onclick = function () {
     api("GET", "/api/clean").then(function (p) {
-      var lines = p.items.map(function (i) { return i.Kind + "  " + i.Name + "  " + i.Size; });
+      var lines = p.items.map(function (i) { return i.Kind + "  " + i.Name + "  " + i.Size + "  " + i.Info; });
       if (p.orphans.length) {
         lines.push("", "Orphan DB volumes (remove by hand):");
         p.orphans.forEach(function (i) { lines.push("  docker volume rm " + i.Name); });

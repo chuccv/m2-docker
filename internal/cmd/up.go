@@ -99,8 +99,7 @@ func (e *env) ensureImage(phpVersion string) error {
 	if err := e.runner.Stream("docker", "build", "--label", "com.md.hash="+want, "--build-arg", "PHP_VERSION="+phpVersion, "-t", tag, dir); err != nil {
 		return fmt.Errorf("build %s: %w", tag, err)
 	}
-	_, err = e.runner.Run("docker", "image", "prune", "-f", "--filter", "label=com.md.image=php")
-	return err
+	return nil
 }
 
 func nodeMajor(v string) string {
@@ -276,6 +275,9 @@ func (e *env) up(s site.Site, home string) error {
 	}
 	if err := saveState(home, st); err != nil {
 		return err
+	}
+	if _, err := e.runner.Run("docker", "image", "prune", "-f", "--filter", "label=com.md.image=php"); err != nil {
+		fmt.Fprintf(e.writer(), "warning: prune old md/php images: %v\n", err)
 	}
 	if runChanged {
 		if _, err := e.runner.Run("docker", append([]string{"exec", "ddev-" + s.Name + "-web"}, reload...)...); err != nil {

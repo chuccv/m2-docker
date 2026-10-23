@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -235,6 +236,45 @@ func TestDisk(t *testing.T) {
 	}
 }
 
+func TestDiskSharedVolumeInfo(t *testing.T) {
+	root := t.TempDir()
+	writeSite(t, root, "shop", "name: shop\ntype: magento2\nphp_version: \"8.3\"\nnodejs_version: \"22\"\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n")
+	os.MkdirAll(filepath.Join(root, "shop", ".md"), 0o755)
+	os.WriteFile(filepath.Join(root, "shop", ".md", "config.yaml"), []byte("name: shop\nphp: \"8.3\"\nnode: \"22\"\nsearch: 2.19.1\nsearch_engine: opensearch\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n"), 0o644)
+	out := `{"Images":[],"Volumes":[{"Name":"md-node-22","Size":"1MB"},{"Name":"md-shared_md-opensearch-2.19.1-data","Size":"1MB"},{"Name":"md-shared_md-opensearch-2.12.0-data","Size":"1MB"},{"Name":"md-shared_md-xhgui-data","Size":"1MB"}]}`
+	f := &run.FakeRunner{Out: map[string]string{"docker system df -v --format {{json .}}": out}}
+	r := do(newServer(t.TempDir(), f, &fakeActions{}, []string{root}), "GET", "/api/disk", "", nil)
+	var res struct{ Volumes []diskVolume }
+	json.Unmarshal(r.Body.Bytes(), &res)
+	want := []string{"shared, used by shop", "shared, used by shop", "shared, used by no known site", "XHGui profiles of all sites"}
+	for i, v := range res.Volumes {
+		if v.Info != want[i] {
+			t.Fatalf("%s: %q", v.Name, v.Info)
+		}
+	}
+}
+
+func TestDiskImageUsers(t *testing.T) {
+	root := t.TempDir()
+	for _, n := range []string{"a", "b"} {
+		writeSite(t, root, n, "name: "+n+"\ntype: magento2\nphp_version: \"8.3\"\ndatabase:\n  type: mariadb\n  version: \"10.6\"\n")
+	}
+	out := `{"Images":[{"Repository":"md/php","Tag":"8.3","Size":"700MB","Containers":"1"},{"Repository":"selenium/standalone-chrome","Tag":"4","Size":"2GB","Containers":"1"},{"Repository":"md/php","Tag":"8.1","Size":"700MB","Containers":"0"}],"Volumes":[]}`
+	f := &run.FakeRunner{Out: map[string]string{
+		"docker system df -v --format {{json .}}":      out,
+		"docker ps -a --format {{.Image}}\t{{.Names}}": "selenium/standalone-chrome:4\tgiftcard-selenium\n",
+	}}
+	r := do(newServer(t.TempDir(), f, &fakeActions{}, []string{root}), "GET", "/api/disk", "", nil)
+	var res struct{ Images []diskImage }
+	json.Unmarshal(r.Body.Bytes(), &res)
+	want := []string{"a, b", "giftcard-selenium", ""}
+	for i, img := range res.Images {
+		if img.UsedBy != want[i] {
+			t.Fatalf("%s:%s: %q", img.Repo, img.Tag, img.UsedBy)
+		}
+	}
+}
+
 func TestDiskUntaggedImageShowsIDAndUser(t *testing.T) {
 	out := `{"Images":[{"ID":"sha256:62dc4e39cb24aa","Repository":"<none>","Tag":"<none>","Size":"720MB","Containers":"1"}],"Volumes":[]}`
 	f := &run.FakeRunner{Out: map[string]string{
@@ -383,5 +423,14 @@ func TestCronAction(t *testing.T) {
 	r := do(h, "GET", "/api/sites", "", nil)
 	if !strings.Contains(r.Body.String(), `"cron":true`) {
 		t.Fatalf("sites: %s", r.Body)
+	}
+}
+
+func TestVolumeSiteRabbitMQ(t *testing.T) {
+	if got := volumeSite("shop-rabbitmq"); got != "shop" {
+		t.Fatalf("got %q", got)
+	}
+	if got := sharedVolumeInfo("shop-rabbitmq", nil); got != "" {
+		t.Fatalf("got %q", got)
 	}
 }

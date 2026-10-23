@@ -10,11 +10,13 @@ import (
 
 func fake() *run.FakeRunner {
 	return &run.FakeRunner{Out: map[string]string{
-		"docker images -f dangling=true --format {{.ID}}\t{{.Size}}": "abc123\t100MB\n",
-		"docker images --format {{.Repository}}:{{.Tag}}\t{{.Size}}": "ddev/ddev-webserver:v1\t500MB\nddev/ddev-dbserver:v1\t300MB\nnginx:1\t10MB\n",
-		"docker ps -a --format {{.Image}}":                           "ddev/ddev-webserver:v1\n",
-		"docker system df --format {{.Type}}\t{{.Reclaimable}}":      "Images\t1GB\nBuild Cache\t2GB\n",
-		"docker volume ls -f dangling=true -q":                       "junk-vol\nsite-es-mariadb\nee249-qa-mariadb\n",
+		"docker images -f dangling=true --format {{.ID}}\t{{.Size}}\t{{.CreatedSince}}":                  "abc123\t100MB\t2 days ago\ndef456\t50MB\t3 weeks ago\n",
+		"docker image inspect -f {{index .Config.Labels \"com.md.image\"}}\t{{json .Config.Env}} abc123": "php\t[\"PATH=/usr/bin\",\"PHP_VERSION=8.3.35\"]\n",
+		"docker image inspect -f {{index .Config.Labels \"com.md.image\"}}\t{{json .Config.Env}} def456": "\tnull\n",
+		"docker images --format {{.Repository}}:{{.Tag}}\t{{.Size}}":                                     "ddev/ddev-webserver:v1\t500MB\nddev/ddev-dbserver:v1\t300MB\nnginx:1\t10MB\n",
+		"docker ps -a --format {{.Image}}":                                                               "ddev/ddev-webserver:v1\n",
+		"docker system df --format {{.Type}}\t{{.Reclaimable}}":                                          "Images\t1GB\nBuild Cache\t2GB\n",
+		"docker volume ls -f dangling=true -q":                                                           "junk-vol\nsite-es-mariadb\nee249-qa-mariadb\n",
 	}}
 }
 
@@ -24,11 +26,12 @@ func TestPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []Item{
-		{"image", "abc123", "100MB"},
-		{"image", "ddev/ddev-dbserver:v1", "300MB"},
-		{"buildcache", "build cache", "2GB"},
-		{"volume", "junk-vol", ""},
-		{"db-orphan", "site-es-mariadb", ""},
+		{"image", "abc123", "100MB", "old md/php build (PHP 8.3.35), created 2 days ago"},
+		{"image", "def456", "50MB", "untagged image, created 3 weeks ago"},
+		{"image", "ddev/ddev-dbserver:v1", "300MB", "unused DDEV image"},
+		{"buildcache", "build cache", "2GB", "Docker build cache, the next md/php build is slower"},
+		{"volume", "junk-vol", "", "volume used by no container"},
+		{"db-orphan", "site-es-mariadb", "", "DB volume of no known site"},
 	}
 	if !reflect.DeepEqual(items, want) {
 		t.Fatalf("got %v", items)
@@ -38,11 +41,11 @@ func TestPlan(t *testing.T) {
 func TestApplyNeverDeletesDB(t *testing.T) {
 	r := &run.FakeRunner{}
 	err := Apply([]Item{
-		{"db-orphan", "site-es-mariadb", ""},
-		{"volume", "site-es-mariadb", ""},
-		{"image", "abc123", ""},
-		{"buildcache", "build cache", ""},
-		{"volume", "junk-vol", ""},
+		{"db-orphan", "site-es-mariadb", "", ""},
+		{"volume", "site-es-mariadb", "", ""},
+		{"image", "abc123", "", ""},
+		{"buildcache", "build cache", "", ""},
+		{"volume", "junk-vol", "", ""},
 	}, r)
 	if err != nil {
 		t.Fatal(err)
@@ -87,13 +90,14 @@ func TestPlanSkipsProtectedVolumesAndXhguiImage(t *testing.T) {
 func TestApplyNeverDeletesProtected(t *testing.T) {
 	r := &run.FakeRunner{}
 	err := Apply([]Item{
-		{"volume", "md-opensearch-latest-data", ""},
-		{"volume", "md-node-22", ""},
-		{"volume", "ddev-ee249-ln_redis", ""},
-		{"volume", "shop-redis", ""},
-		{"volume", "x-mariadb", ""},
-		{"image", "ddev/ddev-xhgui:v1.25.2", ""},
-		{"volume", "some-other-volume", ""},
+		{"volume", "md-opensearch-latest-data", "", ""},
+		{"volume", "md-node-22", "", ""},
+		{"volume", "ddev-ee249-ln_redis", "", ""},
+		{"volume", "shop-redis", "", ""},
+		{"volume", "shop-rabbitmq", "", ""},
+		{"volume", "x-mariadb", "", ""},
+		{"image", "ddev/ddev-xhgui:v1.25.2", "", ""},
+		{"volume", "some-other-volume", "", ""},
 	}, r)
 	if err != nil {
 		t.Fatal(err)

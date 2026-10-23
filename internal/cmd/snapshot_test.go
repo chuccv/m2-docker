@@ -71,8 +71,8 @@ func TestCleanAbortWithoutYes(t *testing.T) {
 	e.out = out
 	e.in = strings.NewReader("\n")
 	f.Out = map[string]string{
-		"docker images -f dangling=true --format {{.ID}}\t{{.Size}}": "abc\t1MB\n",
-		"docker volume ls -f dangling=true -q":                       "site-es-mariadb\n",
+		"docker images -f dangling=true --format {{.ID}}\t{{.Size}}\t{{.CreatedSince}}": "abc\t1MB\n",
+		"docker volume ls -f dangling=true -q":                                          "site-es-mariadb\n",
 	}
 	if err := exec(t, e, "clean"); err != nil {
 		t.Fatal(err)
@@ -91,7 +91,7 @@ func TestCleanApplyOnYes(t *testing.T) {
 	e, f, _ := testEnv(t, false)
 	e.out = &strings.Builder{}
 	e.in = strings.NewReader("yes\n")
-	f.Out = map[string]string{"docker images -f dangling=true --format {{.ID}}\t{{.Size}}": "abc\t1MB\n"}
+	f.Out = map[string]string{"docker images -f dangling=true --format {{.ID}}\t{{.Size}}\t{{.CreatedSince}}": "abc\t1MB\n"}
 	if err := exec(t, e, "clean"); err != nil {
 		t.Fatal(err)
 	}

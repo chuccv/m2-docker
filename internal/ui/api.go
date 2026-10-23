@@ -222,6 +222,53 @@ type diskVolume struct {
 	Name string `json:"name"`
 	Size string `json:"size"`
 	Site string `json:"site"`
+	Info string `json:"info,omitempty"`
+}
+
+func imageUsers(ref string, sites []site.Site, containers map[string][]string) string {
+	var users []string
+	for _, s := range sites {
+		major, _, _ := strings.Cut(s.NodeVersion, ".")
+		refs := []string{"md/php:" + s.PHPVersion, s.DBImage(), "node:" + major + "-slim"}
+		if key := s.SearchKey(); key != "" {
+			if v, ok := strings.CutPrefix(key, "elasticsearch:"); ok {
+				refs = append(refs, "elasticsearch:"+v)
+			} else {
+				refs = append(refs, "opensearchproject/opensearch:"+key)
+			}
+		}
+		for _, r := range refs {
+			if r == ref {
+				users = append(users, s.Name)
+				break
+			}
+		}
+	}
+	if len(users) == 0 {
+		users = containers[ref]
+	}
+	return strings.Join(users, ", ")
+}
+
+func sharedVolumeInfo(name string, sites []site.Site) string {
+	if !strings.HasPrefix(name, "md-") {
+		return ""
+	}
+	if strings.Contains(name, "md-xhgui") {
+		return "XHGui profiles of all sites"
+	}
+	var users []string
+	for _, s := range sites {
+		major, _, _ := strings.Cut(s.NodeVersion, ".")
+		key := s.SearchKey()
+		if name == "md-node-"+major || key != "" && strings.Contains(name, site.SearchContainer(key)+"-") {
+			users = append(users, s.Name)
+		}
+	}
+	if len(users) == 0 {
+		return "shared, used by no known site"
+	}
+	return "shared, used by " + strings.Join(users, ", ")
 }
 
 func volumeSite(name string) string {
@@ -231,7 +278,7 @@ func volumeSite(name string) string {
 	if strings.HasPrefix(name, "ddev-") && strings.HasSuffix(name, "_redis") {
 		return strings.TrimSuffix(strings.TrimPrefix(name, "ddev-"), "_redis")
 	}
-	for _, suffix := range []string{"-mariadb", "-mysql", "-redis"} {
+	for _, suffix := range []string{"-mariadb", "-mysql", "-redis", "-rabbitmq"} {
 		if i := strings.Index(name, suffix); i > 0 {
 			return name[:i]
 		}
@@ -257,8 +304,20 @@ func (s *server) handleDisk(w http.ResponseWriter, _ *http.Request) {
 		Images  []diskImage  `json:"images"`
 		Volumes []diskVolume `json:"volumes"`
 	}{[]diskImage{}, []diskVolume{}}
+	sites := s.discover()
+	containers := map[string][]string{}
+	if ps, err := s.r.Run("docker", "ps", "-a", "--format", "{{.Image}}\t{{.Names}}"); err == nil {
+		for _, l := range strings.Split(ps, "\n") {
+			if img, name, ok := strings.Cut(strings.TrimSpace(l), "\t"); ok {
+				containers[img] = append(containers[img], name)
+			}
+		}
+	}
 	for _, i := range raw.Images {
 		img := diskImage{Repo: i.Repository, Tag: i.Tag, Size: i.Size, Containers: i.Containers}
+		if i.Repository != "<none>" {
+			img.UsedBy = imageUsers(i.Repository+":"+i.Tag, sites, containers)
+		}
 		if i.Repository == "<none>" {
 			img.Tag = strings.TrimPrefix(i.ID, "sha256:")
 			if len(img.Tag) > 12 {
@@ -271,7 +330,7 @@ func (s *server) handleDisk(w http.ResponseWriter, _ *http.Request) {
 		res.Images = append(res.Images, img)
 	}
 	for _, v := range raw.Volumes {
-		res.Volumes = append(res.Volumes, diskVolume{v.Name, v.Size, volumeSite(v.Name)})
+		res.Volumes = append(res.Volumes, diskVolume{v.Name, v.Size, volumeSite(v.Name), sharedVolumeInfo(v.Name, sites)})
 	}
 	writeJSON(w, http.StatusOK, res)
 }

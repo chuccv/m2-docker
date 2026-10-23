@@ -251,8 +251,8 @@ func TestUpRebuildsOnHashMismatch(t *testing.T) {
 	if b < 0 {
 		t.Fatalf("no build:\n%s", strings.Join(cs, "\n"))
 	}
-	if index(cs, "docker image prune -f --filter label=com.md.image=php") < b {
-		t.Fatalf("prune must follow build")
+	if index(cs, "docker image prune -f --filter label=com.md.image=php") < index(cs, "/sites/ee249-qa/compose.yaml up -d --wait") {
+		t.Fatalf("prune must follow site up:\n%s", strings.Join(cs, "\n"))
 	}
 }
 
@@ -263,6 +263,9 @@ func TestUpSkipsBuildOnHashMatch(t *testing.T) {
 	}
 	if hasPrefixCall(calls(f), "docker build") {
 		t.Fatal("unexpected build")
+	}
+	if index(calls(f), "docker image prune -f --filter label=com.md.image=php") < 0 {
+		t.Fatal("old md/php images must be pruned after up")
 	}
 }
 
