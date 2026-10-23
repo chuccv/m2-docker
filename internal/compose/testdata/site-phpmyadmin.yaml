@@ -13,6 +13,13 @@ services:
       - ee249-qa-mariadb:/var/lib/mysql:nocopy
     labels:
       com.md.managed: "true"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -h 127.0.0.1 --silent || mysqladmin ping -h 127.0.0.1 --silent
+      interval: 2s
+      retries: 300
+      start_period: 5s
   phpmyadmin:
     image: phpmyadmin:5
     container_name: ddev-ee249-qa-phpmyadmin
@@ -34,6 +41,14 @@ services:
       - ddev-ee249-qa_redis:/data
     labels:
       com.md.managed: "true"
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 2s
+      retries: 30
+      start_period: 2s
   web:
     image: md/php:8.5
     container_name: ddev-ee249-qa-web

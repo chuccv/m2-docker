@@ -14,7 +14,7 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/download/
 RUN chmod +x /usr/local/bin/install-php-extensions \
  && apt-get update \
  && apt-get install -y --no-install-recommends nginx apache2 tini mariadb-client git unzip ca-certificates curl util-linux procps \
- && install-php-extensions @composer bcmath gd intl pdo_mysql soap sockets sodium xsl zip opcache redis xdebug xhprof \
+ && install-php-extensions @composer bcmath bz2 exif gd gmp intl mysqli pcntl pdo_mysql soap sockets sodium xsl zip opcache redis xdebug xhprof \
  && rm -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xhprof.ini \
  && arch="$(dpkg --print-architecture)" \
  && curl -fsSL "https://github.com/axllent/mailpit/releases/download/${MAILPIT_VERSION}/mailpit-linux-${arch}.tar.gz" | tar -xz -C /usr/local/bin mailpit \

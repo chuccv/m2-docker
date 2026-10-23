@@ -45,5 +45,6 @@ Do not change without updating QA tooling (`qa-agent-e2e`, `agent-site.sh`, skil
 
 ## Release
 
-- A bug fix that passes `go test ./...` is committed, pushed to `main` and released without asking Neil (Neil 2026-10-23).
+- A bug fix that passes `go test ./...` is committed and pushed to `main` without asking Neil (Neil 2026-10-23).
+- At most one release per day: batch the day's fixes into a single release (Neil 2026-10-23). Until then, rebuild `/home/neil/.local/bin/md` locally to verify.
 - Release: `GOOS=linux GOARCH=amd64|arm64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=vX.Y.Z" -o md-linux-<arch> ./cmd/md`, `sha256sum md-linux-* > SHA256SUMS`, `gh release create vX.Y.Z --target main` with the three files; then reinstall `/home/neil/.local/bin/md` and restart `md ui`.

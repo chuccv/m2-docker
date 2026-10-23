@@ -50,9 +50,11 @@ func dbService(s site.Site, vol string, labels map[string]string) service {
 		User:          "1000:1000",
 		Volumes:       []string{vol + ":/var/lib/mysql:nocopy"},
 		Labels:        labels,
+		Healthcheck:   &healthcheck{Test: []string{"CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 --silent || mysqladmin ping -h 127.0.0.1 --silent"}, Interval: "2s", Retries: 300, StartPeriod: "5s"},
 	}
 	if s.DBType == "mysql" {
 		svc.Environment = []string{"MYSQL_USER=db", "MYSQL_PASSWORD=db", "MYSQL_DATABASE=db", "MYSQL_ROOT_PASSWORD=root"}
+		svc.Command = []string{"--collation-server=utf8mb4_unicode_520_ci", "--init-connect=SET collation_connection=utf8mb4_unicode_520_ci"}
 	} else {
 		svc.Environment = []string{"MARIADB_USER=db", "MARIADB_PASSWORD=db", "MARIADB_DATABASE=db", "MARIADB_ROOT_PASSWORD=root"}
 	}
@@ -115,6 +117,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 			Restart:       "no",
 			Volumes:       []string{redisVol + ":/data"},
 			Labels:        managed,
+			Healthcheck:   &healthcheck{Test: []string{"CMD", "redis-cli", "ping"}, Interval: "2s", Retries: 30, StartPeriod: "2s"},
 		}
 		f.Volumes[redisVol] = volume{External: true}
 	}
@@ -138,6 +141,7 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 			Restart:       "no",
 			DependsOn:     []string{"web"},
 			Volumes:       []string{p.Home + "/sites/" + s.Name + "/default.vcl:/etc/varnish/default.vcl:ro"},
+			Command:       []string{"-p", "http_req_hdr_len=16k", "-p", "http_resp_hdr_len=64k", "-p", "http_resp_size=96k"},
 			Labels:        managed,
 		}
 	}

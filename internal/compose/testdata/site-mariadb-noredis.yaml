@@ -13,6 +13,13 @@ services:
       - pfsm248-mariadb:/var/lib/mysql:nocopy
     labels:
       com.md.managed: "true"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -h 127.0.0.1 --silent || mysqladmin ping -h 127.0.0.1 --silent
+      interval: 2s
+      retries: 300
+      start_period: 5s
   web:
     image: md/php:8.4
     container_name: ddev-pfsm248-web

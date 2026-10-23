@@ -13,6 +13,13 @@ services:
       - ee249-qa-mariadb:/var/lib/mysql:nocopy
     labels:
       com.md.managed: "true"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -h 127.0.0.1 --silent || mysqladmin ping -h 127.0.0.1 --silent
+      interval: 2s
+      retries: 300
+      start_period: 5s
   redis:
     image: redis:7
     container_name: ddev-ee249-qa-redis
@@ -21,10 +28,25 @@ services:
       - ddev-ee249-qa_redis:/data
     labels:
       com.md.managed: "true"
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 2s
+      retries: 30
+      start_period: 2s
   varnish:
     image: varnish:6.0
     container_name: ddev-ee249-qa-varnish
     restart: "no"
+    command:
+      - -p
+      - http_req_hdr_len=16k
+      - -p
+      - http_resp_hdr_len=64k
+      - -p
+      - http_resp_size=96k
     depends_on:
       - web
     volumes:
