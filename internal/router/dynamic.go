@@ -4,18 +4,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/chuccv/magento2-docker/internal/config"
 	"github.com/chuccv/magento2-docker/internal/site"
 )
 
 type m = map[string]any
 
-func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte {
+func RenderTraefikSite(s site.Site, crt, key string) []byte {
 	hosts := make([]string, len(s.Hostnames))
 	for i, h := range s.Hostnames {
 		hosts[i] = "Host(`" + h + "`)"
@@ -24,7 +22,6 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 	web := s.Name + "-web"
 	mailpit := s.Name + "-mailpit"
 	xhgui := s.Name + "-xhgui"
-	redirect := s.Name + "-https"
 	xhguiSite := xhgui + "-site"
 	secure := func(entry, service string) m {
 		return m{"rule": rule, "entryPoints": []string{entry}, "service": service, "tls": m{}}
@@ -43,14 +40,13 @@ func RenderTraefikSite(s site.Site, crt, key string, ports config.Ports) []byte 
 		"http": m{
 			"routers": m{
 				web + "-secure":     secure("websecure", web),
-				web:                 m{"rule": rule, "entryPoints": []string{"web"}, "middlewares": []string{redirect}, "service": web},
+				web:                 plain("web", web),
 				mailpit + "-secure": secure("mailpit-secure", mailpit),
 				mailpit:             plain("mailpit", mailpit),
 				xhgui + "-secure":   withMiddleware(secure("xhgui-secure", xhgui), xhguiSite),
 				xhgui:               withMiddleware(plain("xhgui", xhgui), xhguiSite),
 			},
 			"middlewares": m{
-				redirect:  m{"redirectScheme": m{"scheme": "https", "port": strconv.Itoa(ports.HTTPS), "permanent": true}},
 				xhguiSite: m{"headers": m{"customRequestHeaders": m{"X-Md-Site": s.Name + "."}}},
 			},
 			"services": m{
@@ -78,12 +74,12 @@ func withMiddleware(r m, middleware string) m {
 	return r
 }
 
-func WriteSite(s site.Site, crt, key, home string, ports config.Ports) error {
+func WriteSite(s site.Site, crt, key, home string) error {
 	dir := filepath.Join(home, "router", "dynamic")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, s.Name+".yaml"), RenderTraefikSite(s, crt, key, ports), 0o644)
+	return os.WriteFile(filepath.Join(dir, s.Name+".yaml"), RenderTraefikSite(s, crt, key), 0o644)
 }
 
 func RenderDefaultCert(crt, key string) []byte {

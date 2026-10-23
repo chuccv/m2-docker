@@ -245,7 +245,7 @@ func (e *env) up(s site.Site, home string) error {
 	if err != nil {
 		return err
 	}
-	if err := router.WriteSite(s, "/certs/"+filepath.Base(crt), "/certs/"+filepath.Base(key), home, cfg.Ports); err != nil {
+	if err := router.WriteSite(s, "/certs/"+filepath.Base(crt), "/certs/"+filepath.Base(key), home); err != nil {
 		return err
 	}
 	body, err := compose.RenderSite(s, paths)

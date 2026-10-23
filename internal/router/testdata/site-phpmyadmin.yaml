@@ -1,10 +1,5 @@
 http:
     middlewares:
-        ee249-qa-https:
-            redirectScheme:
-                permanent: true
-                port: "443"
-                scheme: https
         ee249-qa-xhgui-site:
             headers:
                 customRequestHeaders:
@@ -35,8 +30,6 @@ http:
         ee249-qa-web:
             entryPoints:
                 - web
-            middlewares:
-                - ee249-qa-https
             rule: Host(`ee249-qa.ddev.site`) || Host(`shop.example.test`)
             service: ee249-qa-web
         ee249-qa-web-secure:

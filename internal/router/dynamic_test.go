@@ -17,7 +17,7 @@ var ports = config.Ports{HTTP: 80, HTTPS: 443, MailpitHTTP: 8025, MailpitHTTPS: 
 var testSite = site.Site{Name: "ee249-qa", Hostnames: []string{"ee249-qa.ddev.site", "shop.example.test"}}
 
 func TestRenderTraefikSite(t *testing.T) {
-	got := RenderTraefikSite(testSite, "/certs/ee249-qa.crt", "/certs/ee249-qa.key", ports)
+	got := RenderTraefikSite(testSite, "/certs/ee249-qa.crt", "/certs/ee249-qa.key")
 	path := filepath.Join("testdata", "site-ee249-qa.yaml")
 	if *update {
 		if err := os.MkdirAll("testdata", 0o755); err != nil {
@@ -38,14 +38,14 @@ func TestRenderTraefikSite(t *testing.T) {
 
 func TestWriteSite(t *testing.T) {
 	home := t.TempDir()
-	if err := WriteSite(testSite, "/certs/a.crt", "/certs/a.key", home, ports); err != nil {
+	if err := WriteSite(testSite, "/certs/a.crt", "/certs/a.key", home); err != nil {
 		t.Fatal(err)
 	}
 	b, err := os.ReadFile(filepath.Join(home, "router", "dynamic", "ee249-qa.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(b) != string(RenderTraefikSite(testSite, "/certs/a.crt", "/certs/a.key", ports)) {
+	if string(b) != string(RenderTraefikSite(testSite, "/certs/a.crt", "/certs/a.key")) {
 		t.Fatal("content mismatch")
 	}
 }
@@ -80,7 +80,7 @@ func TestWriteDefaultCert(t *testing.T) {
 func TestRenderTraefikSiteVarnish(t *testing.T) {
 	s := testSite
 	s.Varnish = "6.0"
-	got := RenderTraefikSite(s, "/certs/ee249-qa.crt", "/certs/ee249-qa.key", ports)
+	got := RenderTraefikSite(s, "/certs/ee249-qa.crt", "/certs/ee249-qa.key")
 	path := filepath.Join("testdata", "site-varnish.yaml")
 	if *update {
 		if err := os.WriteFile(path, got, 0o644); err != nil {
@@ -99,7 +99,7 @@ func TestRenderTraefikSiteVarnish(t *testing.T) {
 func TestRenderTraefikSitePhpMyAdmin(t *testing.T) {
 	s := testSite
 	s.PhpMyAdmin = true
-	got := RenderTraefikSite(s, "/certs/ee249-qa.crt", "/certs/ee249-qa.key", ports)
+	got := RenderTraefikSite(s, "/certs/ee249-qa.crt", "/certs/ee249-qa.key")
 	path := filepath.Join("testdata", "site-phpmyadmin.yaml")
 	if *update {
 		if err := os.WriteFile(path, got, 0o644); err != nil {
