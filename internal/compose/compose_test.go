@@ -258,3 +258,14 @@ func TestRenderSiteCron(t *testing.T) {
 		t.Fatalf("missing MD_CRON=1\n%s", out)
 	}
 }
+
+func TestRenderSiteRabbitMQ(t *testing.T) {
+	s := loadSite(t, "ee249-qa")
+	s.Addons = append(s.Addons, "rabbitmq")
+	s.RabbitMQUser, s.RabbitMQPass, s.RabbitMQVhost = "magento", "pa$s", "/"
+	out, err := RenderSite(s, paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "site-rabbitmq.yaml", out)
+}

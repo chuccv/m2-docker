@@ -70,14 +70,8 @@ func TestLoadMissing(t *testing.T) {
 }
 
 func TestSupported(t *testing.T) {
-	cases := []struct {
-		name, want string
-	}{{"site-es", "rabbitmq"}}
-	for _, c := range cases {
-		err := Supported(load(t, c.name))
-		if err == nil || !strings.Contains(err.Error(), c.want) {
-			t.Fatalf("%s: %v", c.name, err)
-		}
+	if err := Supported(load(t, "site-es")); err != nil {
+		t.Fatalf("site-es: %v", err)
 	}
 	qa := load(t, "ee249-qa")
 	if err := Supported(qa); err == nil || !strings.Contains(err.Error(), "latest") {
@@ -86,12 +80,6 @@ func TestSupported(t *testing.T) {
 	qa.SearchVersion = "2.19.1"
 	if err := Supported(qa); err != nil {
 		t.Fatal(err)
-	}
-	for _, a := range []string{"rabbitmq"} {
-		err := Supported(Site{Type: "magento2", Webserver: "nginx-fpm", Addons: []string{a}})
-		if err == nil || !strings.Contains(err.Error(), a) {
-			t.Fatalf("%s: %v", a, err)
-		}
 	}
 	if err := Supported(load(t, "site-apache")); err != nil {
 		t.Fatal(err)
@@ -261,5 +249,67 @@ func TestLoadPhpMyAdminFromAddon(t *testing.T) {
 	s, _ = Load(dir)
 	if !s.PhpMyAdmin {
 		t.Fatal("addon not detected")
+	}
+}
+
+func TestLoadRabbitMQFromEnvPHP(t *testing.T) {
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, ".ddev"), 0o755)
+	os.MkdirAll(filepath.Join(root, "app", "etc"), 0o755)
+	os.WriteFile(filepath.Join(root, ".ddev", "config.yaml"), []byte("name: rq\ntype: magento2\n"), 0o644)
+	os.WriteFile(filepath.Join(root, "app", "etc", "env.php"), []byte("<?php\nreturn [\n    'queue' => [\n        'amqp' => [\n            'host' => 'rabbitmq',\n            'port' => '5672',\n            'user' => 'magento',\n            'password' => 'secret',\n            'virtualhost' => '/'\n        ],\n    ],\n];\n"), 0o644)
+	s, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.HasAddon("rabbitmq") || s.RabbitMQUser != "magento" || s.RabbitMQPass != "secret" || s.RabbitMQVhost != "/" {
+		t.Fatalf("%+v", s)
+	}
+	os.Remove(filepath.Join(root, "app", "etc", "env.php"))
+	if s, _ := Load(root); s.HasAddon("rabbitmq") {
+		t.Fatalf("addons %v", s.Addons)
+	}
+	os.WriteFile(filepath.Join(root, ".ddev", "docker-compose.rabbitmq.yaml"), []byte("x"), 0o644)
+	if s, _ := Load(root); s.RabbitMQUser != "rabbitmq" || s.RabbitMQPass != "rabbitmq" {
+		t.Fatalf("%+v", s)
+	}
+}
+
+func TestEnvAMQP(t *testing.T) {
+	cases := []struct {
+		name, php string
+		want      map[string]string
+	}{
+		{"array syntax", `<?php return array('queue' => array('amqp' => array('host' => 'rabbitmq', 'user' => 'u', 'password' => 'p(x]', 'virtualhost' => '/v')));`,
+			map[string]string{"host": "rabbitmq", "user": "u", "password": "p(x]", "virtualhost": "/v"}},
+		{"nested and double quotes", "<?php return ['queue' => [\"amqp\" => ['host' => \"rabbitmq\", 'ssl_options' => ['verify' => false], 'user' => 'it\\'s', 'virtualhost' => 'v']]];",
+			map[string]string{"host": "rabbitmq", "user": "it's", "virtualhost": "v"}},
+		{"commented out", "<?php return [\n'queue' => [\n// 'amqp' => ['host' => 'rabbitmq'],\n/* 'amqp' => ['host' => 'rabbitmq'], */\n'consumers_wait_for_messages' => 1]];", map[string]string{}},
+		{"outside queue", `<?php return ['other' => ['amqp' => ['host' => 'rabbitmq']], 'queue' => []];`, map[string]string{}},
+	}
+	for _, c := range cases {
+		root := t.TempDir()
+		os.MkdirAll(filepath.Join(root, "app", "etc"), 0o755)
+		os.WriteFile(filepath.Join(root, "app", "etc", "env.php"), []byte(c.php), 0o644)
+		got := envAMQP(root)
+		for k, v := range c.want {
+			if got[k] != v {
+				t.Errorf("%s: %s = %q, want %q (%v)", c.name, k, got[k], v, got)
+			}
+		}
+		if len(c.want) == 0 && len(got) != 0 {
+			t.Errorf("%s: got %v", c.name, got)
+		}
+	}
+}
+
+func TestLoadIgnoresRemoteAMQP(t *testing.T) {
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, ".ddev"), 0o755)
+	os.MkdirAll(filepath.Join(root, "app", "etc"), 0o755)
+	os.WriteFile(filepath.Join(root, ".ddev", "config.yaml"), []byte("name: rq\ntype: magento2\n"), 0o644)
+	os.WriteFile(filepath.Join(root, "app", "etc", "env.php"), []byte(`<?php return ['queue' => ['amqp' => ['host' => 'mq.example.com', 'user' => 'x']]];`), 0o644)
+	if s, _ := Load(root); s.HasAddon("rabbitmq") {
+		t.Fatalf("addons %v", s.Addons)
 	}
 }

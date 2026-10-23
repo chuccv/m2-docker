@@ -17,6 +17,7 @@ var allowedCompose = map[string]bool{
 	"opensearch":        true,
 	"opensearch_memory": true,
 	"redis":             true,
+	"rabbitmq":          true,
 	"mutagen":           true,
 	"varnish":           true,
 	"varnish_extras":    true,

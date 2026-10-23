@@ -22,6 +22,7 @@ type service struct {
 	Image         string            `yaml:"image"`
 	Entrypoint    []string          `yaml:"entrypoint,omitempty"`
 	ContainerName string            `yaml:"container_name"`
+	Hostname      string            `yaml:"hostname,omitempty"`
 	Restart       string            `yaml:"restart,omitempty"`
 	User          string            `yaml:"user,omitempty"`
 	Command       []string          `yaml:"command,omitempty"`

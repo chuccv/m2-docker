@@ -49,6 +49,7 @@ type MDConfig struct {
 	Node         string      `yaml:"node"`
 	Redis        bool        `yaml:"redis"`
 	RedisVersion string      `yaml:"redis_version,omitempty"`
+	RabbitMQ     bool        `yaml:"rabbitmq,omitempty"`
 	Hostnames    []string    `yaml:"hostnames"`
 	Websites     []Website   `yaml:"websites"`
 	Magento      struct {
@@ -191,6 +192,9 @@ func loadMD(root string) (Site, error) {
 	}
 	if c.Redis {
 		s.Addons = []string{"redis"}
+	}
+	if c.RabbitMQ {
+		s.Addons = append(s.Addons, "rabbitmq")
 	}
 	if s.SearchEngine == "elasticsearch" && s.SearchVersion == "" {
 		s.SearchVersion = DefaultElasticsearch

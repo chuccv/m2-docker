@@ -15,6 +15,7 @@ type Site struct {
 	Name, Root, Type, PHPVersion, DBType, DBVersion, NodeVersion, Webserver string
 	Hostnames                                                               []string
 	SearchVersion, SearchEngine, Varnish, RedisVersion                      string
+	RabbitMQUser, RabbitMQPass, RabbitMQVhost                               string
 	PhpMyAdmin, Cron, DDEV                                                  bool
 	Addons                                                                  []string
 	Websites                                                                []Website
@@ -41,7 +42,11 @@ func (s Site) IsApache() bool {
 
 func Load(root string) (Site, error) {
 	if HasMDConfig(root) {
-		return loadMD(root)
+		s, err := loadMD(root)
+		if err != nil {
+			return s, err
+		}
+		return withRabbitMQ(s), nil
 	}
 	ddev := filepath.Join(root, ".ddev")
 	data, err := os.ReadFile(filepath.Join(ddev, "config.yaml"))
@@ -100,7 +105,81 @@ func Load(root string) (Site, error) {
 		}
 	}
 	s.PhpMyAdmin = s.HasAddon("phpmyadmin")
-	return s, nil
+	return withRabbitMQ(s), nil
+}
+
+var (
+	phpCommentRe = regexp.MustCompile(`(?s)/\*.*?\*/|(?m)^[ \t]*(?://|#)[^\n]*`)
+	phpValueRe   = regexp.MustCompile(`['"](\w+)['"]\s*=>\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)")`)
+)
+
+func phpArray(src []byte, key string) []byte {
+	m := regexp.MustCompile(`['"]` + key + `['"]\s*=>\s*(\[|array\s*\()`).FindIndex(src)
+	if m == nil {
+		return nil
+	}
+	start, depth := m[1], 1
+	for i := start; i < len(src); i++ {
+		switch c := src[i]; c {
+		case '\'', '"':
+			for i++; i < len(src) && src[i] != c; i++ {
+				if src[i] == '\\' {
+					i++
+				}
+			}
+		case '[', '(':
+			depth++
+		case ']', ')':
+			if depth--; depth == 0 {
+				return src[start:i]
+			}
+		}
+	}
+	return nil
+}
+
+func envAMQP(root string) map[string]string {
+	data, err := os.ReadFile(filepath.Join(root, "app", "etc", "env.php"))
+	if err != nil {
+		return nil
+	}
+	block := phpArray(phpArray(phpCommentRe.ReplaceAll(data, nil), "queue"), "amqp")
+	if block == nil {
+		return nil
+	}
+	v := map[string]string{}
+	for _, m := range phpValueRe.FindAllSubmatch(block, -1) {
+		if _, ok := v[string(m[1])]; !ok {
+			v[string(m[1])] = strings.NewReplacer(`\'`, `'`, `\"`, `"`, `\\`, `\`).Replace(string(m[2]) + string(m[3]))
+		}
+	}
+	return v
+}
+
+func HasLocalAMQP(root string) bool {
+	return envAMQP(root)["host"] == "rabbitmq"
+}
+
+func (s Site) AMQPArgs() []string {
+	return []string{"--amqp-host=rabbitmq", "--amqp-port=5672", "--amqp-user=" + s.RabbitMQUser, "--amqp-password=" + s.RabbitMQPass, "--amqp-virtualhost=" + s.RabbitMQVhost}
+}
+
+func withRabbitMQ(s Site) Site {
+	if v := envAMQP(s.Root); v["host"] == "rabbitmq" {
+		s.Addons = appendUnique(s.Addons, "rabbitmq")
+		sort.Strings(s.Addons)
+		s.RabbitMQUser, s.RabbitMQPass, s.RabbitMQVhost = v["user"], v["password"], v["virtualhost"]
+	}
+	if !s.HasAddon("rabbitmq") {
+		return s
+	}
+	if s.RabbitMQUser == "" {
+		s.RabbitMQUser, s.RabbitMQPass = "rabbitmq", "rabbitmq"
+	}
+	if s.RabbitMQVhost == "" {
+		s.RabbitMQVhost = "/"
+	}
+	return s
 }
 
 func searchVersion(ddev string) string {

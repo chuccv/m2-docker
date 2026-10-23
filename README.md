@@ -186,7 +186,8 @@ Flags override the stack: `--php`, `--db`, `--db-type mariadb|mysql`, `--search`
 - Database: MariaDB or MySQL
 - Search: OpenSearch or Elasticsearch
 - Redis, Varnish, phpMyAdmin, Node, Mailpit, Xdebug, XHProf
-- Not supported: RabbitMQ, custom DDEV compose files (`md migrate --ignore-extra-compose` skips them)
+- RabbitMQ (`ddev-<name>-rabbitmq`, host `rabbitmq`): started when `.md/config.yaml` has `rabbitmq: true`, `app/etc/env.php` has `queue.amqp`, or `.ddev` has the rabbitmq add-on; user, password and vhost come from `env.php` (default `rabbitmq`/`rabbitmq`). `md addon rabbitmq` adds it to any site: it sets `rabbitmq: true`, restarts the site and, when `env.php` has no `queue.amqp`, runs `setup:config:set --amqp-*`. Data lives in the `<name>-rabbitmq` volume; RabbitMQ creates the user only when that volume is new, so after changing the credentials in `env.php` run `md stop && docker volume rm <name>-rabbitmq && md up`
+- Not supported: custom DDEV compose files (`md migrate --ignore-extra-compose` skips them)
 
 ## How it works
 

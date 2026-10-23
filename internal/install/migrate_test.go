@@ -171,9 +171,10 @@ func TestMigrateRefusesWithoutDDEV(t *testing.T) {
 
 func TestMigrateUnsupportedWritesNothing(t *testing.T) {
 	fx := msetup(t)
-	os.WriteFile(filepath.Join(fx.root, ".ddev", "docker-compose.rabbitmq.yaml"), []byte("x"), 0o644)
+	cfg := "name: mig\ntype: magento2\nphp_version: \"8.4\"\nwebserver_type: generic\ndatabase:\n  type: mariadb\n  version: \"11.4\"\n"
+	os.WriteFile(filepath.Join(fx.root, ".ddev", "config.yaml"), []byte(cfg), 0o644)
 	cs, err := fx.migrate()
-	if err == nil || !strings.Contains(err.Error(), "rabbitmq") || len(cs) != 0 || site.HasMDConfig(fx.root) || len(fx.upSites) != 0 {
+	if err == nil || !strings.Contains(err.Error(), "generic") || len(cs) != 0 || site.HasMDConfig(fx.root) || len(fx.upSites) != 0 {
 		t.Fatalf("err %v calls %v", err, cs)
 	}
 }

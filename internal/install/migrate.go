@@ -42,6 +42,9 @@ func FromDDEV(s site.Site) site.MDConfig {
 		if a == "redis" {
 			c.Redis = true
 		}
+		if a == "rabbitmq" {
+			c.RabbitMQ = true
+		}
 	}
 	defaults := site.DefaultHosts(s.Name)
 	for _, h := range s.Hostnames {

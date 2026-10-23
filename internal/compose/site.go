@@ -22,6 +22,10 @@ func hasAddon(s site.Site, name string) bool {
 	return false
 }
 
+func escapeDollar(v string) string {
+	return strings.ReplaceAll(v, "$", "$$")
+}
+
 func ComposerAuth() string {
 	var candidates []string
 	if h := os.Getenv("COMPOSER_HOME"); h != "" {
@@ -113,6 +117,19 @@ func RenderSite(s site.Site, p Paths) ([]byte, error) {
 			Labels:        managed,
 		}
 		f.Volumes[redisVol] = volume{External: true}
+	}
+	if hasAddon(s, "rabbitmq") {
+		f.Services["rabbitmq"] = service{
+			Image:         "rabbitmq:4-management",
+			ContainerName: "ddev-" + s.Name + "-rabbitmq",
+			Hostname:      "rabbitmq",
+			Restart:       "no",
+			Environment:   []string{"RABBITMQ_DEFAULT_USER=" + escapeDollar(s.RabbitMQUser), "RABBITMQ_DEFAULT_PASS=" + escapeDollar(s.RabbitMQPass), "RABBITMQ_DEFAULT_VHOST=" + escapeDollar(s.RabbitMQVhost)},
+			Volumes:       []string{"rabbitmq:/var/lib/rabbitmq"},
+			Labels:        managed,
+			Healthcheck:   &healthcheck{Test: []string{"CMD", "rabbitmq-diagnostics", "-q", "ping"}, Interval: "5s", Retries: 30, StartPeriod: "10s"},
+		}
+		f.Volumes["rabbitmq"] = volume{Name: s.Name + "-rabbitmq"}
 	}
 	if s.Varnish != "" {
 		f.Services["varnish"] = service{
