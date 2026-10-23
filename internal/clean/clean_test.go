@@ -107,3 +107,35 @@ func TestApplyNeverDeletesProtected(t *testing.T) {
 		t.Fatalf("calls %v", r.Calls)
 	}
 }
+
+func TestStaleSearch(t *testing.T) {
+	r := &run.FakeRunner{Out: map[string]string{
+		"docker ps -a --filter label=com.docker.compose.project=md-shared --format {{.Names}}\t{{.Image}}": "md-router\ttraefik:v3.3\nmd-opensearch-3.0.0\topensearchproject/opensearch:3.0.0\nmd-opensearch-2.12.0\topensearchproject/opensearch:2.12.0\n",
+		"docker volume ls -q --filter label=com.docker.compose.project=md-shared":                          "md-shared_md-opensearch-3.0.0-data\nmd-shared_md-opensearch-2.12.0-data\nmd-shared_md-opensearch-2.12.0-plugins\nmd-shared_md-xhgui-data\n",
+	}}
+	items, err := staleSearch(r, []site.Site{{Name: "a", SearchVersion: "3.0.0"}, {Name: "b"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, it := range items {
+		names = append(names, it.Kind+" "+it.Name)
+	}
+	want := []string{"container md-opensearch-2.12.0", "search-volume md-shared_md-opensearch-2.12.0-data", "search-volume md-shared_md-opensearch-2.12.0-plugins", "image opensearchproject/opensearch:2.12.0"}
+	if !reflect.DeepEqual(names, want) {
+		t.Fatalf("got %v", names)
+	}
+	a := &run.FakeRunner{}
+	if err := Apply(items, a); err != nil {
+		t.Fatal(err)
+	}
+	wantCalls := [][]string{{"docker", "rm", "-f", "md-opensearch-2.12.0"}, {"docker", "volume", "rm", "md-shared_md-opensearch-2.12.0-data"}, {"docker", "volume", "rm", "md-shared_md-opensearch-2.12.0-plugins"}, {"docker", "rmi", "opensearchproject/opensearch:2.12.0"}}
+	if !reflect.DeepEqual(a.Calls, wantCalls) {
+		t.Fatalf("calls %v", a.Calls)
+	}
+	for _, sites := range [][]site.Site{nil, {{Name: "a", SearchVersion: "3.0.0"}, {Name: "x", Type: "error: broken"}}} {
+		if items, _ := staleSearch(r, sites); len(items) != 0 {
+			t.Fatalf("%v: %v", sites, items)
+		}
+	}
+}

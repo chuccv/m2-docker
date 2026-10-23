@@ -111,6 +111,12 @@ func Plan(r run.Runner, sites []site.Site) ([]Item, error) {
 		}
 	}
 
+	search, err := staleSearch(r, sites)
+	if err != nil {
+		return nil, err
+	}
+	items = append(items, search...)
+
 	known := map[string]bool{}
 	for _, s := range sites {
 		known[s.DBVolume()] = true
@@ -133,6 +139,49 @@ func Plan(r run.Runner, sites []site.Site) ([]Item, error) {
 	return append(items, orphans...), nil
 }
 
+func isSearch(name string) bool {
+	return strings.HasPrefix(name, "md-opensearch-") || strings.HasPrefix(name, "md-elasticsearch-")
+}
+
+func staleSearch(r run.Runner, sites []site.Site) ([]Item, error) {
+	used := map[string]bool{}
+	for _, s := range sites {
+		if strings.HasPrefix(s.Type, "error: ") {
+			return nil, nil
+		}
+		if k := s.SearchKey(); k != "" {
+			used[site.SearchContainer(k)] = true
+		}
+	}
+	if len(sites) == 0 {
+		return nil, nil
+	}
+	out, err := r.Run("docker", "ps", "-a", "--filter", "label=com.docker.compose.project=md-shared", "--format", "{{.Names}}\t{{.Image}}")
+	if err != nil {
+		return nil, err
+	}
+	var containers, images []Item
+	for _, l := range lines(out) {
+		n, img := split(l)
+		if isSearch(n) && !used[n] {
+			containers = append(containers, Item{"container", n, "", "search container used by no known site"})
+			images = append(images, Item{"image", img, "", "search image used by no known site"})
+		}
+	}
+	out, err = r.Run("docker", "volume", "ls", "-q", "--filter", "label=com.docker.compose.project=md-shared")
+	if err != nil {
+		return nil, err
+	}
+	var volumes []Item
+	for _, v := range lines(out) {
+		base := strings.TrimSuffix(strings.TrimSuffix(strings.TrimPrefix(v, "md-shared_"), "-data"), "-plugins")
+		if isSearch(base) && !used[base] {
+			volumes = append(volumes, Item{"search-volume", v, "", "search index of no known site"})
+		}
+	}
+	return append(append(containers, volumes...), images...), nil
+}
+
 func Apply(items []Item, r run.Runner) error {
 	for _, it := range items {
 		var args []string
@@ -142,6 +191,13 @@ func Apply(items []Item, r run.Runner) error {
 				continue
 			}
 			args = []string{"rmi", it.Name}
+		case "container":
+			if !isSearch(it.Name) {
+				continue
+			}
+			args = []string{"rm", "-f", it.Name}
+		case "search-volume":
+			args = []string{"volume", "rm", it.Name}
 		case "buildcache":
 			args = []string{"builder", "prune", "-f"}
 		case "volume":

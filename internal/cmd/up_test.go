@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -581,5 +582,34 @@ func TestStateChangingCommandsWaitForLock(t *testing.T) {
 				t.Fatal("still blocked after unlock")
 			}
 		})
+	}
+}
+
+func TestUpDropsSearchVersionNoSiteUses(t *testing.T) {
+	e, _, home := upEnv(t)
+	if err := saveState(home, state{SearchVersions: []string{"1.3.0", "2.19.1"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	st, _ := loadState(home)
+	shared, _ := os.ReadFile(filepath.Join(home, "shared", "compose.yaml"))
+	if !reflect.DeepEqual(st.SearchVersions, []string{"2.19.1"}) || strings.Contains(string(shared), "1.3.0") {
+		t.Fatalf("versions %v", st.SearchVersions)
+	}
+}
+
+func TestUpKeepsSearchVersionsWhenASiteFailsToLoad(t *testing.T) {
+	e, _, home := upEnv(t)
+	if err := saveState(home, state{SearchVersions: []string{"1.3.0"}, Sites: []siteRef{{Name: "gone", Root: t.TempDir()}}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, e, "up"); err != nil {
+		t.Fatal(err)
+	}
+	st, _ := loadState(home)
+	if !reflect.DeepEqual(st.SearchVersions, []string{"1.3.0", "2.19.1"}) {
+		t.Fatalf("versions %v", st.SearchVersions)
 	}
 }

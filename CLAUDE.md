@@ -42,3 +42,8 @@ Do not change without updating QA tooling (`qa-agent-e2e`, `agent-site.sh`, skil
 - No comments in code.
 - User-facing messages are in English.
 - Any action against a real site under `/var/www/html/*` requires a claim: `AGENT_NAME=<name> /home/neil/brain/tools/agent-site.sh claim <site> "<task>"`, then `release`.
+
+## Release
+
+- A bug fix that passes `go test ./...` is committed, pushed to `main` and released without asking Neil (Neil 2026-10-23).
+- Release: `GOOS=linux GOARCH=amd64|arm64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=vX.Y.Z" -o md-linux-<arch> ./cmd/md`, `sha256sum md-linux-* > SHA256SUMS`, `gh release create vX.Y.Z --target main` with the three files; then reinstall `/home/neil/.local/bin/md` and restart `md ui`.

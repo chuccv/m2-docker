@@ -209,6 +209,7 @@ func (e *env) up(s site.Site, home string) error {
 		return err
 	}
 	st.add(siteRef{Name: s.Name, Root: s.Root}, s.SearchKey())
+	st.SearchVersions = searchKeys(st.sites(s), st.SearchVersions)
 	paths := compose.Paths{Home: home, Root: s.Root, ComposerAuth: compose.ComposerAuth()}
 	for _, d := range []string{"certs", "router/dynamic"} {
 		if err := os.MkdirAll(filepath.Join(home, d), 0o755); err != nil {

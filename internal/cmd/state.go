@@ -8,7 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"syscall"
+
+	"github.com/chuccv/magento2-docker/internal/site"
 )
 
 type siteRef struct {
@@ -79,6 +82,37 @@ func (st *state) add(s siteRef, search string) {
 		}
 	}
 	st.Sites = append(st.Sites, s)
+}
+
+func (st state) sites(cur site.Site) []site.Site {
+	out := []site.Site{cur}
+	for _, ref := range st.Sites {
+		if ref.Name == cur.Name {
+			continue
+		}
+		s, err := site.Load(ref.Root)
+		if err != nil {
+			s = site.Site{Name: ref.Name, Root: ref.Root, Type: "error: " + err.Error()}
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+func searchKeys(sites []site.Site, previous []string) []string {
+	var keys []string
+	for _, s := range sites {
+		if strings.HasPrefix(s.Type, "error: ") {
+			keys = append([]string{}, previous...)
+			break
+		}
+	}
+	for _, s := range sites {
+		if k := s.SearchKey(); k != "" && !hasString(keys, k) {
+			keys = append(keys, k)
+		}
+	}
+	return keys
 }
 
 func hasString(l []string, v string) bool {

@@ -97,9 +97,19 @@ func newCleanCmd(e *env) *cobra.Command {
 		Short: "Delete unused docker images, build cache and volumes",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
+			home, err := e.home()
+			if err != nil {
+				return err
+			}
+			st, err := loadState(home)
+			if err != nil {
+				return err
+			}
 			var sites []site.Site
 			if s, err := e.findSite(""); err == nil {
-				sites = append(sites, s)
+				sites = st.sites(s)
+			} else {
+				sites = st.sites(site.Site{})[1:]
 			}
 			items, err := clean.Plan(e.runner, sites)
 			if err != nil {
@@ -113,7 +123,7 @@ func newCleanCmd(e *env) *cobra.Command {
 					del = append(del, it)
 				}
 			}
-			for _, kind := range []string{"image", "buildcache", "volume"} {
+			for _, kind := range []string{"container", "search-volume", "image", "buildcache", "volume"} {
 				for _, it := range del {
 					if it.Kind == kind {
 						fmt.Fprintf(e.out, "%-10s %s %s  %s\n", it.Kind, it.Name, it.Size, it.Info)
